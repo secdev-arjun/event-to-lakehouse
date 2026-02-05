@@ -343,6 +343,34 @@ services:
         --conf spark.hadoop.fs.s3a.path.style.access=true
         --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false
         /opt/spark/scripts/bronze_assets_to_silver_assets.py
+  
+  spark-schema-infer:
+    image: tabulario/spark-iceberg
+    container_name: spark-schema-infer
+    depends_on:
+      - rest
+      - minio
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_REGION: us-east-1
+    volumes:
+      - ./scripts:/opt/spark/scripts
+    networks:
+      - lakehouse_net
+    entrypoint: >
+      spark-submit
+        --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.5.1,org.apache.hadoop:hadoop-aws:3.3.4,software.amazon.awssdk:bundle:2.24.8
+        --conf spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
+        --conf spark.sql.catalog.iceberg=org.apache.iceberg.spark.SparkCatalog
+        --conf spark.sql.catalog.iceberg.type=hadoop
+        --conf spark.sql.catalog.iceberg.warehouse=s3a://warehouse/iceberg
+        --conf spark.hadoop.fs.s3a.endpoint=http://minio:9000
+        --conf spark.hadoop.fs.s3a.access.key=minioadmin
+        --conf spark.hadoop.fs.s3a.secret.key=minioadmin
+        --conf spark.hadoop.fs.s3a.path.style.access=true
+        --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false
+        /opt/spark/scripts/schema_inferer.py
 
 volumes:
   controller_1_data:
