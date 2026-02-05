@@ -1,0 +1,7 @@
+# Runtime / local state (DO NOT COMMIT)
+lake/
+minio-data/
+
+# Python virtual env
+venv/
+.venv/
