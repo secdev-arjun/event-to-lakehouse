@@ -1,0 +1,20 @@
+{event=login, user=arjun, ts=2026-01-26T15:30:00Z}
+null
+{test=test1}
+random
+{}
+{Testing12=value}
+{Name=ar}
+{event=login, user=dan}
+{company=securado}
+error
+test data
+{result={category=spot, list=[{symbol=BTCUSDT, bid1Price=87840.2, lowPrice24h=86080.7, volume24h=10013.246248, bid1Size=2.059413, turnover24h=875637148.17775098, usdIndexPrice=87748.031364, ask1Size=0.719556, prevPrice24h=88718, price24hPcnt=-0.0099, highPrice24h=88974, ask1Price=87840.3, lastPrice=87840.2}]}, retExtInfo={}, time=1769430965543, retCode=0, retMsg=OK}
+{result={category=spot, list=[{symbol=BTCUSDT, bid1Price=87857, lowPrice24h=86080.7, volume24h=10018.797806, bid1Size=1.61958, turnover24h=876124816.19498018, usdIndexPrice=87756.88537, ask1Size=0.143064, prevPrice24h=88718, price24hPcnt=-0.0097, highPrice24h=88974, ask1Price=87857.1, lastPrice=87855.7}]}, retExtInfo={}, time=1769430995921, retCode=0, retMsg=OK}
+{result={category=spot, list=[{symbol=BTCUSDT, bid1Price=87861.6, lowPrice24h=86080.7, volume24h=10013.881828, bid1Size=1.704101, turnover24h=875688467.53640448, usdIndexPrice=87763.330317, ask1Size=1.21901, prevPrice24h=88719.7, price24hPcnt=-0.0097, highPrice24h=88974, ask1Price=87861.7, lastPrice=87861.6}]}, retExtInfo={}, time=1769431026399, retCode=0, retMsg=OK}
+{result={category=spot, list=[{symbol=BTCUSDT, bid1Price=87864, lowPrice24h=86080.7, volume24h=10014.808352, bid1Size=1.259389, turnover24h=875769873.57795178, usdIndexPrice=87765.521576, ask1Size=0.856713, prevPrice24h=88719.7, price24hPcnt=-0.0096, highPrice24h=88974, ask1Price=87864.1, lastPrice=87864}]}, retExtInfo={}, time=1769431056592, retCode=0, retMsg=OK}
+{result={category=spot, list=[{symbol=BTCUSDT, bid1Price=87864, lowPrice24h=86080.7, volume24h=10013.068215, bid1Size=0.893925, turnover24h=875615264.03773628, usdIndexPrice=87764.990727, ask1Size=1.144581, prevPrice24h=88735.8, price24hPcnt=-0.0098, highPrice24h=88974, ask1Price=87864.1, lastPrice=87864}]}, retExtInfo={}, time=1769431086948, retCode=0, retMsg=OK}
+{result={category=spot, list=[{symbol=BTCUSDT, bid1Price=87816.1, lowPrice24h=86080.7, volume24h=10015.605972, bid1Size=0.366889, turnover24h=875838214.38875318, usdIndexPrice=87733.26707, ask1Size=1.35093, prevPrice24h=88735.8, price24hPcnt=-0.0103, highPrice24h=88974, ask1Price=87816.2, lastPrice=87824.5}]}, retExtInfo={}, time=1769431117147, retCode=0, retMsg=OK}
+{result={category=spot, list=[{symbol=BTCUSDT, bid1Price=87819.9, lowPrice24h=86080.7, volume24h=10018.278002, bid1Size=0.459399, turnover24h=876072854.19524848, usdIndexPrice=87727.528315, ask1Size=0.875291, prevPrice24h=88735.8, price24hPcnt=-0.0103, highPrice24h=88974, ask1Price=87820, lastPrice=87819.9}]}, retExtInfo={}, time=1769431147483, retCode=0, retMsg=OK}
+{result={category=spot, list=[{symbol=BTCUSDT, bid1Price=87800, lowPrice24h=86080.7, volume24h=10019.847145, bid1Size=0.131796, turnover24h=876210650.20448818, usdIndexPrice=87710.826858, ask1Size=1.408363, prevPrice24h=88735.8, price24hPcnt=-0.0105, highPrice24h=88974, ask1Price=87800.1, lastPrice=87800.7}]}, retExtInfo={}, time=1769431177945, retCode=0, retMsg=OK}
+{result={category=spot, list=[{symbol=BTCUSDT, bid1Price=87793.4, lowPrice24h=86080.7, volume24h=10018.910974, bid1Size=1.331102, turnover24h=876124898.15842398, usdIndexPrice=87690.500924, ask1Size=0.109888, prevPrice24h=88740.2, price24hPcnt=-0.0107, highPrice24h=88974, ask1Price=87793.5, lastPrice=87793.4}]}, retExtInfo={}, time=1769431208296, retCode=0, retMsg=OK}
