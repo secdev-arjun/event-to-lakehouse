@@ -48,6 +48,8 @@ Path = jvm.org.apache.hadoop.fs.Path
 
 def _fs_for(path: str):
     # Ensure we use the filesystem for the path scheme (avoids Wrong FS errors).
+    #Path(path) converts the path string to hadoop path object 
+    #the object has a .getFileSystem(hconf) we pass the hadoop config and it looks at s3a and returns the file system that can access these s3 buckets
     return Path(path).getFileSystem(hconf)
 
 
@@ -85,7 +87,7 @@ def list_files_recursive(path: str):
     if not _exists(path):
         return []
     fs = _fs_for(path)
-    it = fs.listFiles(Path(path), True)
+    it = fs.listFiles(Path(path), True) #lists all the immediate file system children for the path not recursively inside the child files 
     out = []
     while it.hasNext():
         st = it.next()

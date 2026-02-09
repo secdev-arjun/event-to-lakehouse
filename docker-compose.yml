@@ -163,7 +163,8 @@ services:
         echo 'Done.';
       "
     volumes:
-      - connect_plugins:/plugins
+      # Use host bind so Connect sees the same plugin directory
+      - ./connect-plugins:/plugins
 
   # ----------------------------
   # Kafka Connect (Distributed)
@@ -379,7 +380,6 @@ volumes:
   broker_1_data:
   broker_2_data:
   broker_3_data:
-  connect_plugins:
   mongo_data:
   conduktor_pg_data:
   conduktor_data:
