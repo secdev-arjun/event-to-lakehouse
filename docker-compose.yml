@@ -315,6 +315,9 @@ services:
     image: tabulario/spark-iceberg
     container_name: spark-iceberg
     restart: unless-stopped
+    # Resource caps to prevent Kafka/KRaft starvation under load
+    cpus: "1.5"
+    mem_limit: 2g
     depends_on:
       - rest
       - minio
@@ -348,6 +351,9 @@ services:
   spark-schema-infer:
     image: tabulario/spark-iceberg
     container_name: spark-schema-infer
+    # Resource caps to keep streaming schema inference lightweight
+    cpus: "0.75"
+    mem_limit: 1g
     depends_on:
       - rest
       - minio
