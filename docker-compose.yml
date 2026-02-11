@@ -219,7 +219,8 @@ services:
       - "7000:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker-1:19092
+      # Use all brokers to avoid single-node dependency
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker-1:19092,broker-2:19092,broker-3:19092
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: connect
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://connect:8083
     depends_on:
@@ -235,7 +236,8 @@ services:
       - "7001:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker-1:19092
+      # Use all brokers to avoid single-node dependency
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker-1:19092,broker-2:19092,broker-3:19092
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: connect
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://connect:8083
       KAFKA_CLUSTERS_0_READONLY: "false"
@@ -244,7 +246,6 @@ services:
     depends_on:
       - broker-1
       - connect
-
   # 3) Conduktor Console needs a DB (PostgreSQL is required)
   conduktor-postgresql:
     image: postgres:14
@@ -257,6 +258,8 @@ services:
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
     volumes:
       - conduktor_pg_data:/var/lib/postgresql/data
+    networks:
+      - default
 
   conduktor-console:
     image: conduktor/conduktor-console:latest
@@ -376,6 +379,11 @@ services:
       - spark.sql.shuffle.partitions=4
       - --conf
       - spark.default.parallelism=4
+      # Fail-safe: skip missing/corrupt files if MinIO events arrive early or files are transient
+      - --conf
+      - spark.sql.files.ignoreMissingFiles=true
+      - --conf
+      - spark.sql.files.ignoreCorruptFiles=true
       - --conf
       - spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
       - --conf
