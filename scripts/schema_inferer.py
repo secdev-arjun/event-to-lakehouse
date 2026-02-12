@@ -56,13 +56,16 @@ KAFKA_BOOTSTRAP = os.getenv(
 )
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "minio.object.events")
 STARTING_OFFSETS = os.getenv("STARTING_OFFSETS", "latest")
-MAX_OFFSETS_PER_TRIGGER = int(os.getenv("MAX_OFFSETS_PER_TRIGGER", "1000"))
+# Conservative defaults to avoid backlog spikes starving Kafka
+MAX_OFFSETS_PER_TRIGGER = int(os.getenv("MAX_OFFSETS_PER_TRIGGER", "200"))
 TRIGGER_INTERVAL = os.getenv("TRIGGER_INTERVAL", "30 seconds")
+MAX_EVENTS_PER_BATCH = int(os.getenv("MAX_EVENTS_PER_BATCH", "200"))  # 0 = no cap
+MAX_TOPICS_PER_BATCH = int(os.getenv("MAX_TOPICS_PER_BATCH", "5"))  # 0 = no cap
 
 DEFAULT_BUCKET = os.getenv("DEFAULT_BUCKET", "bronze")
 
-MAX_FILES_FOR_INFERENCE = int(os.getenv("MAX_FILES_FOR_INFERENCE", "50"))
-SAMPLING_RATIO = float(os.getenv("SAMPLING_RATIO", "0.2"))
+MAX_FILES_FOR_INFERENCE = int(os.getenv("MAX_FILES_FOR_INFERENCE", "20"))
+SAMPLING_RATIO = float(os.getenv("SAMPLING_RATIO", "0.1"))
 COUNT_SAMPLE_RECORDS = os.getenv("COUNT_SAMPLE_RECORDS", "false").lower() == "true"
 DROP_ALL_NULL_FIELDS = os.getenv("DROP_ALL_NULL_FIELDS", "false").lower() == "true"
 MAX_SAMPLE_BYTES = int(os.getenv("MAX_SAMPLE_BYTES", "0"))  # 0 = no cap
@@ -70,6 +73,11 @@ MAX_SAMPLE_FILE_BYTES = int(os.getenv("MAX_SAMPLE_FILE_BYTES", "0"))  # 0 = no c
 
 READ_RETRY_COUNT = int(os.getenv("READ_RETRY_COUNT", "3"))
 READ_RETRY_SLEEP_SEC = float(os.getenv("READ_RETRY_SLEEP_SEC", "2"))
+
+# Backlog and cadence controls
+MIN_SECONDS_BETWEEN_INFER = int(os.getenv("MIN_SECONDS_BETWEEN_INFER", "300"))
+MIN_NEW_FILES_TO_INFER = int(os.getenv("MIN_NEW_FILES_TO_INFER", "3"))
+MAX_EVENT_AGE_HOURS = int(os.getenv("MAX_EVENT_AGE_HOURS", "0"))  # 0 = keep all
 
 RECENT_FILES_TABLE = os.getenv(
     "RECENT_FILES_TABLE", "iceberg.schema_registry.recent_files"
@@ -84,6 +92,10 @@ JSON_READ_OPTS = {
 if DROP_ALL_NULL_FIELDS:
     JSON_READ_OPTS["dropFieldIfAllNull"] = "true"
 
+# Safety defaults: ignore missing/corrupt data files during inference
+spark.conf.set("spark.sql.files.ignoreMissingFiles", "true")
+spark.conf.set("spark.sql.files.ignoreCorruptFiles", "true")
+
 # ------------------------------------------------------------------------------
 # State helpers (schema + metadata)
 # ------------------------------------------------------------------------------
@@ -94,6 +106,15 @@ def _now_iso() -> str:
 
 def _hash_schema(schema_json: str) -> str:
     return hashlib.sha256(schema_json.encode("utf-8")).hexdigest()
+
+
+def _parse_iso(ts_str: str):
+    if not ts_str:
+        return None
+    try:
+        return datetime.fromisoformat(ts_str)
+    except Exception:
+        return None
 
 
 def read_state(topic_name: str) -> dict:
@@ -336,11 +357,33 @@ def process_batch(batch_df, batch_id):
         .dropDuplicates(["file_path"])
     )
 
+    # Optional: skip very old events to prevent huge backlog replays
+    if MAX_EVENT_AGE_HOURS > 0:
+        cutoff = F.expr(f"current_timestamp() - INTERVAL {MAX_EVENT_AGE_HOURS} HOURS")
+        decoded = decoded.filter(
+            F.col("event_time").isNull() | (F.col("event_time") >= cutoff)
+        )
+
+    # Optional: cap total events processed in a micro-batch (process latest first)
+    if MAX_EVENTS_PER_BATCH > 0:
+        decoded = decoded.orderBy(
+            F.coalesce(F.col("event_time"), F.col("ingest_ts")).desc(),
+            F.col("ingest_ts").desc()
+        ).limit(MAX_EVENTS_PER_BATCH)
+
     if decoded.rdd.isEmpty():
         print(f"[BATCH {batch_id}] No usable object events after filtering")
         return
 
-    topics = [r["topic_name"] for r in decoded.select("topic_name").distinct().collect()]
+    topics_df = (
+        decoded.groupBy("topic_name")
+        .agg(F.max(F.coalesce(F.col("event_time"), F.col("ingest_ts"))).alias("last_ts"))
+        .orderBy(F.col("last_ts").desc())
+    )
+    topics = [r["topic_name"] for r in topics_df.collect()]
+    if MAX_TOPICS_PER_BATCH > 0 and len(topics) > MAX_TOPICS_PER_BATCH:
+        topics = topics[:MAX_TOPICS_PER_BATCH]
+        decoded = decoded.filter(F.col("topic_name").isin(topics))
     if not topics:
         return
 
@@ -389,6 +432,8 @@ def process_batch(batch_df, batch_id):
             print(f"[SKIP] {topic_name}: no usable files after size limits")
             continue
 
+        state = read_state(topic_name)
+
         # Drop paths that are not yet visible (event arrived before object is readable)
         existing_paths, missing_paths = filter_existing_paths(
             sample_files, READ_RETRY_COUNT, READ_RETRY_SLEEP_SEC
@@ -407,7 +452,47 @@ def process_batch(batch_df, batch_id):
             print(f"[SKIP] {topic_name}: no readable files available yet")
             continue
 
-        state = read_state(topic_name)
+        # Cooldown: avoid repeated inference for bursty topics
+        if MIN_SECONDS_BETWEEN_INFER > 0:
+            last_success = _parse_iso(state.get("last_success_ts"))
+            if last_success:
+                age_sec = (datetime.now(timezone.utc) - last_success).total_seconds()
+                if age_sec < MIN_SECONDS_BETWEEN_INFER:
+                    skip_state = {
+                        "topic": topic_name,
+                        "sample_files": sample_files,
+                        "sample_file_count": len(sample_files),
+                        "sample_bytes": sample_bytes,
+                        "sample_truncated": sample_truncated,
+                        "schema_hash": state.get("schema_hash"),
+                        "last_success_ts": state.get("last_success_ts"),
+                        "last_attempt_ts": _now_iso(),
+                        "skip_reason": f"cooldown_{MIN_SECONDS_BETWEEN_INFER}s",
+                    }
+                    write_state(topic_name, skip_state)
+                    print(f"[SKIP] {topic_name}: cooldown active ({int(age_sec)}s since last)")
+                    continue
+
+        # Skip if not enough new files since last inference
+        if MIN_NEW_FILES_TO_INFER > 0:
+            prev_files = set(state.get("sample_files") or [])
+            new_files = [p for p in sample_files if p not in prev_files]
+            if len(new_files) < MIN_NEW_FILES_TO_INFER:
+                skip_state = {
+                    "topic": topic_name,
+                    "sample_files": sample_files,
+                    "sample_file_count": len(sample_files),
+                    "sample_bytes": sample_bytes,
+                    "sample_truncated": sample_truncated,
+                    "schema_hash": state.get("schema_hash"),
+                    "last_success_ts": state.get("last_success_ts"),
+                    "last_attempt_ts": _now_iso(),
+                    "skip_reason": f"new_files<{MIN_NEW_FILES_TO_INFER}",
+                }
+                write_state(topic_name, skip_state)
+                print(f"[SKIP] {topic_name}: insufficient new files ({len(new_files)})")
+                continue
+
         try:
             schema_json, meta = infer_schema(sample_files)
             if not schema_json:

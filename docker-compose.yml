@@ -367,6 +367,10 @@ services:
       # Explicit Kafka bootstrap so it's visible in the container env
       KAFKA_BOOTSTRAP_SERVERS: broker-1:19092,broker-2:19092,broker-3:19092
       KAFKA_TOPIC: minio.object.events
+      # Testing: infer schema from a single latest file
+      MAX_FILES_FOR_INFERENCE: "1"
+      # Testing: allow inference even if only one new file arrived
+      MIN_NEW_FILES_TO_INFER: "1"
     volumes:
       - ./scripts:/opt/spark/scripts
     networks:
@@ -385,6 +389,14 @@ services:
       - spark.sql.shuffle.partitions=4
       - --conf
       - spark.default.parallelism=4
+      - --conf
+      - spark.driver.bindAddress=0.0.0.0
+      - --conf
+      - spark.driver.host=127.0.0.1
+      - --conf
+      - spark.network.timeout=300s
+      - --conf
+      - spark.executor.heartbeatInterval=60s
       # Fail-safe: skip missing/corrupt files if MinIO events arrive early or files are transient
       - --conf
       - spark.sql.files.ignoreMissingFiles=true
