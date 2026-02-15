@@ -368,9 +368,11 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: broker-1:19092,broker-2:19092,broker-3:19092
       KAFKA_TOPIC: minio.object.events
       # Testing: infer schema from a single latest file
-      MAX_FILES_FOR_INFERENCE: "1"
-      # Testing: allow inference even if only one new file arrived
+      MAX_FILES_FOR_INFERENCE: "20"
+      # Allow inference even if only one new file arrived
       MIN_NEW_FILES_TO_INFER: "1"
+      # Read all records from the selected files for more complete schema
+      SAMPLING_RATIO: "1"
     volumes:
       - ./scripts:/opt/spark/scripts
     networks:
