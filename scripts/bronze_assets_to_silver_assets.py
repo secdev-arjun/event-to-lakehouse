@@ -1,3 +1,4 @@
+import json
 import os
 import time
 from urllib.parse import unquote
@@ -69,6 +70,11 @@ TARGET_TABLE = "iceberg.silver.assets"
 RAPID7_TOPIC = "rapid7.assets.raw"
 FORTI_TOPIC = "fortisiem.devices.raw"
 
+def _with_trailing_slash(path: str) -> str:
+    return path if path.endswith("/") else path + "/"
+
+SCHEMA_ROOT = _with_trailing_slash(os.getenv("SCHEMA_ROOT", "s3a://warehouse/schemas/"))
+
 KAFKA_BOOTSTRAP = os.getenv(
     "KAFKA_BOOTSTRAP_SERVERS",
     "broker-1:19092,broker-2:19092,broker-3:19092"
@@ -134,49 +140,6 @@ def _decode_key(raw_key: str, bucket: str):
 decode_key_udf = F.udf(_decode_key, StringType())
 
 
-# ------------------------------------------------------------------------------
-# Rapid7 schema
-# ------------------------------------------------------------------------------
-rapid7_schema = StructType([
-    StructField("_corrupt_record", StringType(), True),
-
-    StructField("id", IntegerType(), True),
-    StructField("ip", StringType(), True),
-    StructField("hostName", StringType(), True),
-
-    StructField("addresses", ArrayType(StructType([
-        StructField("ip", StringType(), True)
-    ])), True),
-
-    StructField("assessedForPolicies", BooleanType(), True),
-    StructField("assessedForVulnerabilities", BooleanType(), True),
-
-    StructField("os", StringType(), True),
-    StructField("osCertainty", StringType(), True),  # sample shows string
-
-    StructField("osFingerprint", StructType([
-        StructField("architecture", StringType(), True),
-        StructField("family", StringType(), True),
-        StructField("vendor", StringType(), True),
-        StructField("product", StringType(), True),
-        StructField("cpe", StructType([
-            StructField("version", StringType(), True),
-        ]), True),
-    ]), True),
-
-    StructField("riskScore", DoubleType(), True),
-    StructField("rawRiskScore", DoubleType(), True),
-
-    StructField("vulnerabilities", StructType([
-        StructField("total", IntegerType(), True),
-        StructField("critical", IntegerType(), True),
-        StructField("severe", IntegerType(), True),
-        StructField("moderate", IntegerType(), True),
-        StructField("exploits", IntegerType(), True),
-        StructField("malwareKits", IntegerType(), True),
-    ]), True),
-])
-
 def normalize_rapid7(df):
     # If JSON is corrupt, many fields will be null and _corrupt_record will be populated.
     # We drop corrupt records from the silver table by filtering them out here.
@@ -207,7 +170,10 @@ def normalize_rapid7(df):
         .withColumn("os_family", col("osFingerprint.family"))
         .withColumn("os_vendor", col("osFingerprint.vendor"))
         .withColumn("os_product", col("osFingerprint.product"))
-        .withColumn("os_version", col("osFingerprint.cpe.version"))
+        .withColumn(
+            "os_version",
+            F.coalesce(col("osFingerprint.cpe.version"), col("osFingerprint.version"))
+        )
         .withColumn("os_architecture", col("osFingerprint.architecture"))
         .withColumn("os_certainty", col("osCertainty").cast("double"))
 
@@ -257,28 +223,25 @@ def normalize_rapid7(df):
     )
 
 
-# ------------------------------------------------------------------------------
-# FortiSIEM schema
-# ------------------------------------------------------------------------------
-forti_schema = StructType([
-    StructField("_corrupt_record", StringType(), True),
+def load_latest_schema(topic_name: str):
+    schema_dir = f"{SCHEMA_ROOT}{topic_name}/schema/"
+    try:
+        rows = spark.read.text(schema_dir).collect()
+    except Exception as e:
+        print(f"[WARN] {topic_name}: unable to read schema at {schema_dir}: {e}")
+        return None
 
-    StructField("_id", StructType([
-        StructField("$oid", StringType(), True)
-    ]), True),
+    for r in rows:
+        val = r["value"]
+        if val and val.strip():
+            try:
+                return StructType.fromJson(json.loads(val))
+            except Exception as e:
+                print(f"[WARN] {topic_name}: invalid schema JSON in {schema_dir}: {e}")
+                return None
 
-    StructField("accessIp", StringType(), True),
-    StructField("name", StringType(), True),
-    StructField("naturalId", StringType(), True),
-    StructField("approved", BooleanType(), True),
-    StructField("unmanaged", BooleanType(), True),
-
-    StructField("deviceType", StructType([
-        StructField("vendor", StringType(), True),
-        StructField("model", StringType(), True),
-        StructField("version", StringType(), True),
-    ]), True),
-])
+    print(f"[WARN] {topic_name}: no schema content found in {schema_dir}")
+    return None
 
 def normalize_fortisiem(df):
     forti_clean = df.filter(col("_corrupt_record").isNull())
@@ -423,6 +386,9 @@ def process_batch(batch_df, batch_id):
             rapid7_paths, READ_RETRY_COUNT, READ_RETRY_SLEEP_SEC
         )
         if existing:
+            rapid7_schema = load_latest_schema(RAPID7_TOPIC)
+            if rapid7_schema is None:
+                raise RuntimeError(f"No inferred schema found for {RAPID7_TOPIC}")
             df = spark.read.schema(rapid7_schema).options(**JSON_OPTIONS).json(existing)
             out = normalize_rapid7(df)
             if not out.rdd.isEmpty():
@@ -435,6 +401,9 @@ def process_batch(batch_df, batch_id):
             forti_paths, READ_RETRY_COUNT, READ_RETRY_SLEEP_SEC
         )
         if existing:
+            forti_schema = load_latest_schema(FORTI_TOPIC)
+            if forti_schema is None:
+                raise RuntimeError(f"No inferred schema found for {FORTI_TOPIC}")
             df = spark.read.schema(forti_schema).options(**JSON_OPTIONS).json(existing)
             out = normalize_fortisiem(df)
             if not out.rdd.isEmpty():
