@@ -73,6 +73,7 @@ def filter_existing_paths(paths, retries: int, sleep_sec: float):
 # ------------------------------------------------------------------------------
 
 TARGET_TABLE = "iceberg.silver.assets"
+HISTORY_TABLE = "iceberg.silver.assets_history"
 SCHEMA_VERSION = "silver.asset_observation.v1"
 
 RAPID7_TOPIC = "rapid7.assets.raw"
@@ -278,6 +279,15 @@ TARGET_FIELDS = [
     StructField("raw_payload", StringType(), True),
     StructField("raw_json", StringType(), True),
 ]
+
+HISTORY_EXTRA_FIELDS = [
+    StructField("valid_from", TimestampType(), True),
+    StructField("valid_to", TimestampType(), True),
+    StructField("is_current", BooleanType(), True),
+    StructField("version_id", StringType(), True),
+    StructField("change_ts", TimestampType(), True),
+]
+HISTORY_FIELDS = TARGET_FIELDS + HISTORY_EXTRA_FIELDS
 
 PAYLOAD_HASH_COLUMNS = [
     "asset_uid",
@@ -609,6 +619,135 @@ def ensure_table(df):
         cols_sql = ", ".join([f"{f.name} {f.dataType.simpleString()}" for f in missing])
         spark.sql(f"ALTER TABLE {TARGET_TABLE} ADD COLUMNS ({cols_sql})")
 
+def ensure_history_table(df):
+    if not spark.catalog.tableExists(HISTORY_TABLE):
+        df.limit(0).writeTo(HISTORY_TABLE).create()
+        return
+
+    existing_fields = {f.name: f.dataType for f in spark.table(HISTORY_TABLE).schema.fields}
+    missing = [f for f in HISTORY_FIELDS if f.name not in existing_fields]
+    if missing:
+        cols_sql = ", ".join([f"{f.name} {f.dataType.simpleString()}" for f in missing])
+        spark.sql(f"ALTER TABLE {HISTORY_TABLE} ADD COLUMNS ({cols_sql})")
+
+
+def _with_history_fields(df):
+    df = (
+        df.withColumn("first_seen_at", col("ingest_ts"))
+          .withColumn("last_seen_at", col("ingest_ts"))
+          .withColumn("valid_from", col("ingest_ts"))
+          .withColumn("valid_to", lit(None).cast("timestamp"))
+          .withColumn("is_current", lit(True))
+          .withColumn("change_ts", col("ingest_ts"))
+          .withColumn(
+              "version_id",
+              sha2(
+                  concat_ws(
+                      "|",
+                      col("entity_key_hash"),
+                      col("payload_hash"),
+                      col("valid_from").cast("string")
+                  ),
+                  256
+              )
+          )
+    )
+    return ensure_columns(df, HISTORY_FIELDS)
+
+
+def merge_history_with_retry(incoming_df, retries: int = 3, sleep_sec: float = 2.0):
+    incoming_df = incoming_df.persist()
+    try:
+        if not incoming_df.take(1):
+            return
+
+        current_df = None
+        if spark.catalog.tableExists(TARGET_TABLE):
+            current_df = (
+                spark.table(TARGET_TABLE)
+                .select("entity_key_hash", "payload_hash")
+                .withColumnRenamed("payload_hash", "cur_payload_hash")
+            )
+
+        if current_df is None:
+            new_rows = incoming_df
+            changed_rows = incoming_df.limit(0)
+            same_rows = incoming_df.limit(0)
+        else:
+            joined = incoming_df.join(current_df, "entity_key_hash", "left")
+            new_rows = (
+                joined.filter(col("cur_payload_hash").isNull())
+                .select(incoming_df.columns)
+            )
+            changed_rows = (
+                joined.filter(
+                    col("cur_payload_hash").isNotNull() &
+                    (col("payload_hash") != col("cur_payload_hash"))
+                )
+                .select(incoming_df.columns)
+            )
+            same_rows = (
+                joined.filter(
+                    col("cur_payload_hash").isNotNull() &
+                    (col("payload_hash") == col("cur_payload_hash"))
+                )
+                .select("entity_key_hash", "payload_hash", "ingest_ts")
+            )
+
+        history_inserts = new_rows.unionByName(changed_rows)
+        if not history_inserts.rdd.isEmpty():
+            history_inserts = _with_history_fields(history_inserts)
+            ensure_history_table(history_inserts)
+
+        if spark.catalog.tableExists(HISTORY_TABLE):
+            changed_keys = (
+                changed_rows
+                .select(
+                    "entity_key_hash",
+                    "payload_hash",
+                    col("ingest_ts").alias("valid_from")
+                )
+                .distinct()
+            )
+
+            last_err = None
+            for attempt in range(retries):
+                try:
+                    if not changed_keys.rdd.isEmpty():
+                        changed_keys.createOrReplaceTempView("history_changes")
+                        close_sql = f"""
+                            MERGE INTO {HISTORY_TABLE} h
+                            USING history_changes c
+                            ON h.entity_key_hash = c.entity_key_hash
+                               AND h.is_current = true
+                               AND h.payload_hash <> c.payload_hash
+                            WHEN MATCHED THEN
+                              UPDATE SET valid_to = c.valid_from, is_current = false
+                        """
+                        spark.sql(close_sql)
+
+                    if not history_inserts.rdd.isEmpty():
+                        history_inserts.createOrReplaceTempView("history_inserts")
+                        insert_cols = ", ".join([f.name for f in HISTORY_FIELDS])
+                        insert_vals = ", ".join([f"s.{f.name}" for f in HISTORY_FIELDS])
+                        insert_sql = f"""
+                            MERGE INTO {HISTORY_TABLE} h
+                            USING history_inserts s
+                            ON h.version_id = s.version_id
+                            WHEN NOT MATCHED THEN
+                              INSERT ({insert_cols}) VALUES ({insert_vals})
+                        """
+                        spark.sql(insert_sql)
+                    return
+                except Exception as e:
+                    last_err = e
+                    if attempt < retries - 1:
+                        time.sleep(sleep_sec)
+                        continue
+                    raise last_err
+    finally:
+        incoming_df.unpersist()
+
 
 def merge_with_retry(df, retries: int = 3, sleep_sec: float = 2.0):
     # Materialize the source to avoid non-deterministic expressions in MERGE.
@@ -668,7 +807,8 @@ def merge_with_retry(df, retries: int = 3, sleep_sec: float = 2.0):
 def process_batch(batch_df, batch_id):
     if batch_df.rdd.isEmpty():
         return
-    batch_ts = datetime.now(timezone.utc)
+    batch_ts_row = batch_df.select(F.max("timestamp").alias("batch_ts")).collect()[0]["batch_ts"]
+    batch_ts = batch_ts_row if batch_ts_row is not None else datetime.now(timezone.utc)
 
     parsed = (
         batch_df.selectExpr("CAST(value AS STRING) AS json_str")
@@ -779,6 +919,7 @@ def process_batch(batch_df, batch_id):
         .drop("_rn")
     )
 
+    merge_history_with_retry(combined)
     merge_with_retry(combined)
 
 
