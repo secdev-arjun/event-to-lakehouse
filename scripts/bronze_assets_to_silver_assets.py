@@ -206,6 +206,13 @@ def ensure_columns(df, fields):
             df = df.withColumn(field.name, lit(None).cast(field.dataType))
     return df.select([col(f.name) for f in fields])
 
+def col_if_exists(df, name: str):
+    return col(name) if name in df.columns else lit(None)
+
+def nested_col_if_exists(df, path: str):
+    root = path.split(".")[0]
+    return col(path) if root in df.columns else lit(None)
+
 def drop_corrupt_if_present(df):
     if "_corrupt_record" in df.columns:
         return df.filter(col("_corrupt_record").isNull())
@@ -419,13 +426,18 @@ def normalize_rapid7(df):
 
 def normalize_fortisiem(df):
     forti_clean = drop_corrupt_if_present(df)
+    forti_id_expr = F.coalesce(
+        nested_col_if_exists(forti_clean, "_id.$oid"),
+        col_if_exists(forti_clean, "id"),
+        col_if_exists(forti_clean, "naturalId")
+    ).cast("string")
 
     df = (
         forti_clean
         .withColumn("source_system", lit("fortisiem"))
         .withColumn("ingest_ts", col("ingest_ts"))
         .withColumn("rapid7_id", lit(None).cast("string"))
-        .withColumn("fortisiem_id", col("_id.$oid").cast("string"))
+        .withColumn("fortisiem_id", forti_id_expr)
 
         .withColumn("asset_name", col("name"))
         .withColumn("primary_hostname", col("name"))
@@ -511,7 +523,7 @@ def normalize_sentinel(df):
     inet_expr = F.expr("flatten(transform(networkInterfaces, x -> x.inet))")
     inet_arr = F.coalesce(inet_expr, F.expr("array()"))
     ip_array = F.array_union(inet_arr, F.array(col("lastIpToMgmt")))
-    ip_array = F.array_distinct(F.array_remove(ip_array, lit(None)))
+    ip_array = F.array_distinct(F.filter(ip_array, lambda x: x.isNotNull()))
 
     df = (
         clean
