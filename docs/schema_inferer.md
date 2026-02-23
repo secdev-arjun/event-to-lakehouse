@@ -1,158 +1,280 @@
-# Automatic Schema Generator (Notion‑Ready)
+# Schema Inferer 
 
-This document explains `scripts/schema_inferer.py` in simple, step‑by‑step language. The goal is to make the script easy to understand, easy to operate, and easy to troubleshoot.
+This document explains **`scripts/schema_inferer.py`** in very simple words, with enough detail for engineers to review or troubleshoot.
 
-## One‑Line Summary
+---
 
-The script scans every topic under `s3a://bronze/topics/`, infers a JSON schema from the newest files, and stores that schema under `s3a://warehouse/schemas/<topic>/schema/` along with metadata under `.../_state/`.
+**Big Idea**
 
-## What It Produces
+Imagine each Kafka topic is a shelf of books. Each book is a JSON file.
 
-For each topic:
+The schema inferer job:
+- Looks at the newest books on each shelf
+- Figures out the “shape” of the story inside
+- Saves that shape so other jobs can read files safely
 
-- Schema: `s3a://warehouse/schemas/<topic>/schema/` (contains a `part-*.txt` with the schema JSON)
-- State: `s3a://warehouse/schemas/<topic>/_state/` (metadata JSON written as text)
+If the shape changes, it updates the saved schema.
 
-If you open `_state/`, you will see metadata, not the schema. The schema is only in `schema/`.
+---
 
-## The Big Idea (kid‑friendly)
+**One‑Line Summary**
 
-Think of each topic as a shelf of books. Each book is a JSON file.
+This job listens to MinIO object notifications from Kafka, keeps a rolling list of the newest files per topic, infers a schema from those files, and stores the schema and metadata in S3.
 
-1. The script looks at every shelf.
-2. It grabs the newest few books.
-3. It asks Spark, “What is the shape of the stories inside?”
-4. It saves that shape as the topic’s schema.
-5. It remembers what it did last time so it doesn’t repeat work.
+---
 
-## How It Works (Step‑by‑Step)
+**Where It Reads From**
 
-1. Find all topic folders under `s3a://bronze/topics/`.
-2. For each topic, list all files inside (recursively).
-3. Compare newest file time with the last processed time.
-4. If nothing new, skip that topic.
-5. If new files exist, pick the newest N files.
-6. Spark reads those files and infers a schema.
-7. The schema is saved only if it changed.
-8. State metadata is always updated.
+- Kafka topic: `minio.object.events`
+- MinIO object paths: `s3a://bronze/topics/<topic>/...`
 
-## Configuration Knobs
+---
 
-You can set these using environment variables.
+**Where It Writes To**
 
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `BRONZE_ROOT` | `s3a://bronze/topics/` | Where to read topics from |
-| `SCHEMA_ROOT` | `s3a://warehouse/schemas/` | Where to write schemas |
-| `MAX_FILES_FOR_INFERENCE` | `50` | How many newest files to sample |
-| `SAMPLING_RATIO` | `0.2` | Spark sampling ratio for schema inference |
-| `LOOP_INTERVAL_SEC` | `0` | Run once if 0, loop every N seconds otherwise |
-| `COUNT_SAMPLE_RECORDS` | `false` | If true, counts records in sample |
-| `DROP_ALL_NULL_FIELDS` | `false` | If true, drops fields that are always null |
-| `JSON_MULTILINE` | `true` | Support multi‑line JSON |
-| `JSON_MODE` | `PERMISSIVE` | Keep going if some records are malformed |
-| `CORRUPT_RECORD_COL` | `_corrupt_record` | Column name for corrupt JSON |
+- Schema JSON files:
+  `s3a://warehouse/schemas/<topic>/schema/`
 
-## What the State File Means
+- State metadata:
+  `s3a://warehouse/schemas/<topic>/_state/`
 
-The `_state/` file contains metadata to help debugging. Typical fields:
+- Rolling “recent files” table:
+  `iceberg.schema_registry.recent_files`
 
-- `last_processed_mtime`: newest file time seen last run
-- `sample_files`: which files were used to infer the schema
-- `schema_hash`: hash of the schema JSON
-- `schema_changed`: true if schema changed this run
-- `last_success_ts`: time of last successful inference
-- `last_attempt_ts`: time of last attempt
-- `failure_reason`: error message if inference failed
+---
 
-This is not the schema itself.
+**High‑Level Flow**
 
-## How to Check a Schema
+1. Read Kafka events for object creation.
+2. Decode the file path from the event.
+3. Keep only files under `topics/<topic>/`.
+4. Store newest files in an Iceberg table (rolling window).
+5. For each topic, pick the latest N files.
+6. Infer schema using Spark JSON reader.
+7. Write schema only if it changed.
+8. Always write a state file with metadata.
 
-Use Spark to read the schema folder:
+---
+
+**Why We Keep a Rolling Window**
+
+We do **not** scan the whole topic folder every time. That would be slow.
+
+Instead, we keep the **latest N files** in an Iceberg table. This gives us:
+- Fast lookup
+- A stable sample for schema inference
+- Easy debugging
+
+---
+
+**Key Code Snippets (With Explanation)**
+
+**1) Decode the object key**
+
+```python
+def _decode_key(raw_key: str, bucket: str):
+    decoded = unquote(raw_key).lstrip("/")
+    if bucket and decoded.startswith(bucket + "/"):
+        decoded = decoded[len(bucket) + 1:]
+    if "topics/" in decoded and not decoded.startswith("topics/"):
+        decoded = decoded[decoded.find("topics/"):]
+    return decoded
+```
+
+Explanation:
+- MinIO events often give URL‑encoded keys
+- We decode them and make sure the path starts at `topics/`
+
+---
+
+**2) Parse the Kafka event JSON**
+
+```python
+parsed = (
+    batch_df.selectExpr("CAST(value AS STRING) AS json_str")
+    .withColumn("event", F.from_json(F.col("json_str"), event_schema))
+    .withColumn("record", F.explode_outer(F.col("event.Records")))
+    .select(
+        F.col("record.s3.bucket.name").alias("bucket"),
+        F.col("record.s3.object.key").alias("object_key_raw"),
+        F.col("record.eventTime").alias("event_time_str")
+    )
+)
+```
+
+Explanation:
+- Kafka gives raw JSON strings
+- We parse them into a struct
+- We pull out bucket, key, and event time
+
+---
+
+**3) Build S3A file paths and keep only topic files**
+
+```python
+decoded = (
+    parsed
+    .withColumn("decoded_key", decode_key_udf(F.col("object_key_raw"), F.col("bucket")))
+    .filter(F.col("decoded_key").startswith("topics/"))
+    .withColumn("topic_name", F.regexp_extract(F.col("decoded_key"), r"^topics/([^/]+)/", 1))
+    .withColumn("file_path", F.concat(F.lit("s3a://"), F.col("bucket"), F.lit("/"), F.col("decoded_key")))
+)
+```
+
+Explanation:
+- We only care about files inside `topics/<topic>/...`
+- We extract the topic name
+- We build the final `s3a://` path
+
+---
+
+**4) Keep the latest N files per topic**
+
+```python
+w = Window.partitionBy("topic_name").orderBy(sort_ts.desc(), F.col("ingest_ts").desc())
+recent = combined.withColumn("rn", F.row_number().over(w)) \
+    .filter(F.col("rn") <= MAX_FILES_FOR_INFERENCE) \
+    .drop("rn")
+```
+
+Explanation:
+- We keep only the newest N files
+- This is our rolling sample set
+
+---
+
+**5) Infer schema from the sample files**
+
+```python
+reader = spark.read.options(**JSON_READ_OPTS)
+if SAMPLING_RATIO < 1.0:
+    reader = reader.option("samplingRatio", SAMPLING_RATIO)
+
+schema_json = reader.json(sample_files).schema.json()
+```
+
+Explanation:
+- Spark reads the JSON files
+- It infers a schema automatically
+- We save that schema in JSON format
+
+---
+
+**6) Only write schema if it changed**
+
+```python
+schema_hash = _hash_schema(schema_json)
+if prev_hash != schema_hash:
+    write_schema(topic_name, schema_json)
+```
+
+Explanation:
+- We hash the schema
+- If it’s the same, we skip writing
+
+---
+
+**What the State File Contains**
+
+The `_state/` file is **metadata**, not schema.
+
+Common fields:
+- `sample_files`
+- `schema_hash`
+- `schema_changed`
+- `last_success_ts`
+- `last_attempt_ts`
+- `failure_reason`
+
+This helps with debugging and avoids re‑work.
+
+---
+
+**Configuration (Environment Variables)**
+
+You can override these in Docker or env:
+
+- `SCHEMA_ROOT` (default `s3a://warehouse/schemas/`)
+- `CHECKPOINT_ROOT` (default `s3a://warehouse/checkpoints/schema_inferer/`)
+- `KAFKA_BOOTSTRAP_SERVERS`
+- `KAFKA_TOPIC` (default `minio.object.events`)
+- `STARTING_OFFSETS` (default `latest`)
+- `MAX_OFFSETS_PER_TRIGGER` (default `200`)
+- `TRIGGER_INTERVAL` (default `30 seconds`)
+- `MAX_EVENTS_PER_BATCH` (default `200`)
+- `MAX_TOPICS_PER_BATCH` (default `5`)
+- `DEFAULT_BUCKET` (default `bronze`)
+- `MAX_FILES_FOR_INFERENCE` (default `20`)
+- `SAMPLING_RATIO` (default `0.1`)
+- `COUNT_SAMPLE_RECORDS` (default `false`)
+- `DROP_ALL_NULL_FIELDS` (default `false`)
+- `MAX_SAMPLE_BYTES` (default `0`)
+- `MAX_SAMPLE_FILE_BYTES` (default `0`)
+- `READ_RETRY_COUNT` (default `3`)
+- `READ_RETRY_SLEEP_SEC` (default `2`)
+- `MIN_SECONDS_BETWEEN_INFER` (default `300`)
+- `MIN_NEW_FILES_TO_INFER` (default `3`)
+- `MAX_EVENT_AGE_HOURS` (default `0`)
+- `RECENT_FILES_TABLE` (default `iceberg.schema_registry.recent_files`)
+- `CORRUPT_RECORD_COL` (default `_corrupt_record`)
+- `JSON_MULTILINE` (default `true`)
+- `JSON_MODE` (default `PERMISSIVE`)
+
+---
+
+**How to Run (Docker)**
+
+```bash
+docker compose up -d spark-schema-infer
+```
+
+Check logs:
+
+```bash
+docker compose logs -f spark-schema-infer
+```
+
+---
+
+**How to Verify**
+
+Check schema output:
+
+```sql
+SELECT * FROM iceberg.schema_registry.recent_files LIMIT 5;
+```
+
+Read a schema file:
 
 ```python
 spark.read.text("s3a://warehouse/schemas/fortisiem.devices.raw/schema/") \
      .show(truncate=False)
 ```
 
-The schema JSON will look like:
+Check state metadata:
 
-```
-{"fields":[...],"type":"struct"}
-```
-
-## Why It Sometimes “Looks Like an Error”
-
-You likely opened `_state/` instead of `schema/`. The state file is metadata, so it does not look like a schema. The schema always lives under `.../schema/`.
-
-## Code Walkthrough (Plain English)
-
-`_with_trailing_slash(path)`
-
-- Ensures every root path ends with `/` so path joins are consistent.
-
-`_fs_for(path)`
-
-- Picks the correct Hadoop filesystem for that path (important for S3A).
-
-`_exists(path)`
-
-- Safe “does this exist?” check using the right filesystem.
-
-`list_dirs(path)`
-
-- Returns only real topic folders and skips hidden folders.
-
-`list_files_recursive(path)`
-
-- Returns all files under a topic with their modification time and size.
-
-`read_state(topic)`
-
-- Reads the topic’s last saved metadata from `_state/`.
-
-`write_state(topic, state)`
-
-- Writes a new metadata JSON into `_state/` as a text file.
-
-`write_schema(topic, schema_json)`
-
-- Writes the schema JSON into `schema/` as a text file.
-
-`infer_schema(sample_files)`
-
-- Reads JSON files in Spark, drops corrupt record column, and returns `df.schema.json()`.
-
-`run_once()`
-
-- The main job. It does the discovery, change detection, schema inference, and writes outputs.
-
-`while True: ...`
-
-- Repeats `run_once()` every `LOOP_INTERVAL_SEC` seconds if looping is enabled.
-
-## Short Example (Behavior)
-
-If you add a new file to:
-
-```
-s3a://bronze/topics/fortisiem.devices.raw/
+```python
+spark.read.text("s3a://warehouse/schemas/fortisiem.devices.raw/_state/") \
+     .show(truncate=False)
 ```
 
-Then on the next run:
+---
 
-1. The script sees a newer file.
-2. It reads the newest N files.
-3. It infers the schema.
-4. It writes schema to:
+**Common Issues**
 
-```
-s3a://warehouse/schemas/fortisiem.devices.raw/schema/
-```
+- **Schema file looks wrong**: You may be reading `_state/` instead of `schema/`.
+- **Missing files**: Object events can arrive before MinIO exposes the file. The job retries.
+- **No schema change**: That is expected if the shape didn’t change.
 
-## Confirming It’s Working
+---
 
-If you can see a real schema JSON for both Rapid7 and FortiSIEM, the script is working correctly.
+**Summary (Short)**
 
-If you want me to validate live, tell me how you want to check (Spark, MinIO UI, or `mc`).
+- Kafka events tell us which files arrived
+- We keep only the newest N files per topic
+- We infer schema and write it only if it changes
+- We store metadata for debugging
+
+---
+
+If you want a walkthrough with a real topic example (Rapid7, FortiSIEM, Sentinel), say the word.

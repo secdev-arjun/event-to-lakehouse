@@ -12,16 +12,17 @@ from pyspark.sql.functions import (
 )
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-if SCRIPT_DIR not in sys.path:
-    sys.path.insert(0, SCRIPT_DIR)
-os.environ["PYTHONPATH"] = f"{SCRIPT_DIR}:{os.environ.get('PYTHONPATH', '')}"
+BASE_DIR = os.path.dirname(SCRIPT_DIR)
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 
 from mapping.target import TARGET_FIELDS, ensure_columns
-from mapping.rapid7 import RAPID7_TOPIC, normalize_rapid7
-from mapping.fortisiem import FORTI_TOPIC, normalize_fortisiem
-from mapping.sentinel import SENTINEL_TOPIC, normalize_sentinel
-from noramlizer.kafka_notifications import extract_decoded_events
-from noramlizer.minio_reader import filter_existing_paths, load_latest_schema, read_topic_files
+from mapping.sources.rapid7 import RAPID7_TOPIC, normalize_rapid7
+from mapping.sources.fortisiem import FORTI_TOPIC, normalize_fortisiem
+from mapping.sources.sentinel import SENTINEL_TOPIC, normalize_sentinel
+from bronze.noramlizer.kafka_notifications import extract_decoded_events
+from bronze.noramlizer.minio_reader import filter_existing_paths, load_latest_schema, read_topic_files
 
 # ------------------------------------------------------------------------------
 # Spark session (your docker spark-submit provides Iceberg + s3a configs)

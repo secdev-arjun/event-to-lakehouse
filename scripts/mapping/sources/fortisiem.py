@@ -5,7 +5,7 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.types import ArrayType, StringType
 
-from .target import (
+from mapping.target import (
     add_common_fields,
     ensure_columns,
     add_payload_hash,

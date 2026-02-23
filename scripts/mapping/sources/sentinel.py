@@ -4,7 +4,7 @@ from pyspark.sql.functions import (
     concat_ws, lower, trim, sha2
 )
 
-from .target import (
+from mapping.target import (
     add_common_fields,
     ensure_columns,
     add_payload_hash,
