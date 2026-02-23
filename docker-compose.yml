@@ -178,6 +178,24 @@ services:
       /opt/kafka/bin/connect-distributed.sh
       /opt/kafka/config/connect-distributed.properties
 
+  # ----------------------------
+  # Confluent Schema Registry
+  # ----------------------------
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.1
+    container_name: schema-registry
+    restart: unless-stopped
+    depends_on:
+      - broker-1
+      - broker-2
+      - broker-3
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: broker-1:19092,broker-2:19092,broker-3:19092
+
   minio:
     image: minio/minio:latest
     container_name: minio
@@ -214,6 +232,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker-1:19092,broker-2:19092,broker-3:19092
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: connect
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://connect:8083
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
       KAFKA_CLUSTERS_0_READONLY: "false"
       # Optional: enables editing cluster config from UI wizard (not required for topic create)
       DYNAMIC_CONFIG_ENABLED: "true"
