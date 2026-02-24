@@ -297,6 +297,9 @@ services:
     volumes:
       - ./scripts:/opt/spark/scripts
     ports:
+      - "4040:4040"
+      - "4041:4041"
+      - "4042:4042"
       - "8888:8888"   # Jupyter notebooks (optional)
       - "18080:8080"  # Spark UI (mapped to 18080 to avoid surprises)
       - "10000:10000" # Spark Thrift server (optional)

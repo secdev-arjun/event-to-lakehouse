@@ -1,0 +1,2197 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "properties": {
+    "accessIp": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "applications": {
+      "properties": {
+        "application": {
+          "items": {
+            "properties": {
+              "accessIp": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "appPackage": {
+                "properties": {
+                  "appGroupName": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "naturalId": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "path": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "pkgSignature": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "processName": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "processParam": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "serviceString": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  }
+                },
+                "type": [
+                  "null",
+                  "object"
+                ]
+              },
+              "canSetImportantProc": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              "creationMethod": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "deviceType": {
+                "properties": {
+                  "accessProtocols": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "jobWeight": {
+                    "type": [
+                      "null",
+                      "integer"
+                    ]
+                  },
+                  "model": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "services": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "vendor": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "version": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  }
+                },
+                "type": [
+                  "null",
+                  "object"
+                ]
+              },
+              "isCritical": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              "isMonitor": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              "name": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "naturalId": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "path": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "processName": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "processParam": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "serviceString": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "status": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "swServices": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "updateMethod": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "uptime": {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "type": [
+            "null",
+            "array"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    },
+    "approved": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "bios": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "buildNumber": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "components": {
+      "properties": {
+        "component": {
+          "items": {
+            "properties": {
+              "description": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "firmVer": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "manufacturer": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "model": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "serial": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "swVer": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "type": [
+            "null",
+            "array"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    },
+    "creationMethod": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "description": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "deviceStatus": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "deviceType": {
+      "properties": {
+        "accessProtocols": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "category": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "jobWeight": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "model": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "vendor": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "version": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    },
+    "discoverMethod": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "discoverTime": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "eventLogStatus": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "eventParserList": {
+      "properties": {
+        "eventparser": {
+          "properties": {
+            "enabled": {
+              "type": [
+                "null",
+                "boolean"
+              ]
+            },
+            "name": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "parserXml": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "prevParser": {
+              "properties": {
+                "deviceType": {
+                  "properties": {
+                    "accessProtocols": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "category": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "jobWeight": {
+                      "type": [
+                        "null",
+                        "integer"
+                      ]
+                    },
+                    "model": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "vendor": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "version": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "null",
+                    "object"
+                  ]
+                },
+                "enabled": {
+                  "type": [
+                    "null",
+                    "boolean"
+                  ]
+                },
+                "name": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "parserXml": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "prevParser": {
+                  "properties": {
+                    "deviceType": {
+                      "properties": {
+                        "accessProtocols": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        },
+                        "category": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        },
+                        "jobWeight": {
+                          "type": [
+                            "null",
+                            "integer"
+                          ]
+                        },
+                        "model": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        },
+                        "services": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        },
+                        "vendor": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        },
+                        "version": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "null",
+                        "object"
+                      ]
+                    },
+                    "enabled": {
+                      "type": [
+                        "null",
+                        "boolean"
+                      ]
+                    },
+                    "name": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "parserXml": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    },
+                    "prevParser": {
+                      "properties": {
+                        "deviceType": {
+                          "properties": {
+                            "accessProtocols": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            },
+                            "category": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            },
+                            "jobWeight": {
+                              "type": [
+                                "null",
+                                "integer"
+                              ]
+                            },
+                            "model": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            },
+                            "vendor": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            },
+                            "version": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            }
+                          },
+                          "type": [
+                            "null",
+                            "object"
+                          ]
+                        },
+                        "enabled": {
+                          "type": [
+                            "null",
+                            "boolean"
+                          ]
+                        },
+                        "name": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        },
+                        "parserXml": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        },
+                        "prevParser": {
+                          "properties": {
+                            "deviceType": {
+                              "properties": {
+                                "accessProtocols": {
+                                  "type": [
+                                    "null",
+                                    "string"
+                                  ]
+                                },
+                                "category": {
+                                  "type": [
+                                    "null",
+                                    "string"
+                                  ]
+                                },
+                                "jobWeight": {
+                                  "type": [
+                                    "null",
+                                    "integer"
+                                  ]
+                                },
+                                "model": {
+                                  "type": [
+                                    "null",
+                                    "string"
+                                  ]
+                                },
+                                "services": {
+                                  "type": [
+                                    "null",
+                                    "string"
+                                  ]
+                                },
+                                "vendor": {
+                                  "type": [
+                                    "null",
+                                    "string"
+                                  ]
+                                },
+                                "version": {
+                                  "type": [
+                                    "null",
+                                    "string"
+                                  ]
+                                }
+                              },
+                              "type": [
+                                "null",
+                                "object"
+                              ]
+                            },
+                            "enabled": {
+                              "type": [
+                                "null",
+                                "boolean"
+                              ]
+                            },
+                            "name": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            },
+                            "parserXml": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            },
+                            "prevParser": {
+                              "properties": {
+                                "enabled": {
+                                  "type": [
+                                    "null",
+                                    "boolean"
+                                  ]
+                                },
+                                "name": {
+                                  "type": [
+                                    "null",
+                                    "string"
+                                  ]
+                                },
+                                "parserXml": {
+                                  "type": [
+                                    "null",
+                                    "string"
+                                  ]
+                                },
+                                "prevParser": {
+                                  "properties": {
+                                    "deviceType": {
+                                      "properties": {
+                                        "accessProtocols": {
+                                          "type": [
+                                            "null",
+                                            "string"
+                                          ]
+                                        },
+                                        "category": {
+                                          "type": [
+                                            "null",
+                                            "string"
+                                          ]
+                                        },
+                                        "jobWeight": {
+                                          "type": [
+                                            "null",
+                                            "integer"
+                                          ]
+                                        },
+                                        "model": {
+                                          "type": [
+                                            "null",
+                                            "string"
+                                          ]
+                                        },
+                                        "vendor": {
+                                          "type": [
+                                            "null",
+                                            "string"
+                                          ]
+                                        },
+                                        "version": {
+                                          "type": [
+                                            "null",
+                                            "string"
+                                          ]
+                                        }
+                                      },
+                                      "type": [
+                                        "null",
+                                        "object"
+                                      ]
+                                    },
+                                    "enabled": {
+                                      "type": [
+                                        "null",
+                                        "boolean"
+                                      ]
+                                    },
+                                    "name": {
+                                      "type": [
+                                        "null",
+                                        "string"
+                                      ]
+                                    },
+                                    "parserXml": {
+                                      "type": [
+                                        "null",
+                                        "string"
+                                      ]
+                                    },
+                                    "prevParser": {
+                                      "properties": {
+                                        "deviceType": {
+                                          "properties": {
+                                            "accessProtocols": {
+                                              "type": [
+                                                "null",
+                                                "string"
+                                              ]
+                                            },
+                                            "category": {
+                                              "type": [
+                                                "null",
+                                                "string"
+                                              ]
+                                            },
+                                            "jobWeight": {
+                                              "type": [
+                                                "null",
+                                                "integer"
+                                              ]
+                                            },
+                                            "model": {
+                                              "type": [
+                                                "null",
+                                                "string"
+                                              ]
+                                            },
+                                            "vendor": {
+                                              "type": [
+                                                "null",
+                                                "string"
+                                              ]
+                                            },
+                                            "version": {
+                                              "type": [
+                                                "null",
+                                                "string"
+                                              ]
+                                            }
+                                          },
+                                          "type": [
+                                            "null",
+                                            "object"
+                                          ]
+                                        },
+                                        "enabled": {
+                                          "type": [
+                                            "null",
+                                            "boolean"
+                                          ]
+                                        },
+                                        "name": {
+                                          "type": [
+                                            "null",
+                                            "string"
+                                          ]
+                                        },
+                                        "parserXml": {
+                                          "type": [
+                                            "null",
+                                            "string"
+                                          ]
+                                        },
+                                        "prevParser": {
+                                          "properties": {
+                                            "deviceType": {
+                                              "properties": {
+                                                "accessProtocols": {
+                                                  "type": [
+                                                    "null",
+                                                    "string"
+                                                  ]
+                                                },
+                                                "category": {
+                                                  "type": [
+                                                    "null",
+                                                    "string"
+                                                  ]
+                                                },
+                                                "jobWeight": {
+                                                  "type": [
+                                                    "null",
+                                                    "integer"
+                                                  ]
+                                                },
+                                                "model": {
+                                                  "type": [
+                                                    "null",
+                                                    "string"
+                                                  ]
+                                                },
+                                                "vendor": {
+                                                  "type": [
+                                                    "null",
+                                                    "string"
+                                                  ]
+                                                },
+                                                "version": {
+                                                  "type": [
+                                                    "null",
+                                                    "string"
+                                                  ]
+                                                }
+                                              },
+                                              "type": [
+                                                "null",
+                                                "object"
+                                              ]
+                                            },
+                                            "enabled": {
+                                              "type": [
+                                                "null",
+                                                "boolean"
+                                              ]
+                                            },
+                                            "name": {
+                                              "type": [
+                                                "null",
+                                                "string"
+                                              ]
+                                            },
+                                            "parserXml": {
+                                              "type": [
+                                                "null",
+                                                "string"
+                                              ]
+                                            },
+                                            "prevParser": {
+                                              "properties": {
+                                                "enabled": {
+                                                  "type": [
+                                                    "null",
+                                                    "boolean"
+                                                  ]
+                                                },
+                                                "name": {
+                                                  "type": [
+                                                    "null",
+                                                    "string"
+                                                  ]
+                                                },
+                                                "parserXml": {
+                                                  "type": [
+                                                    "null",
+                                                    "string"
+                                                  ]
+                                                },
+                                                "prevParser": {
+                                                  "properties": {
+                                                    "enabled": {
+                                                      "type": [
+                                                        "null",
+                                                        "boolean"
+                                                      ]
+                                                    },
+                                                    "name": {
+                                                      "type": [
+                                                        "null",
+                                                        "string"
+                                                      ]
+                                                    },
+                                                    "parserXml": {
+                                                      "type": [
+                                                        "null",
+                                                        "string"
+                                                      ]
+                                                    },
+                                                    "prevParser": {
+                                                      "properties": {
+                                                        "enabled": {
+                                                          "type": [
+                                                            "null",
+                                                            "boolean"
+                                                          ]
+                                                        },
+                                                        "name": {
+                                                          "type": [
+                                                            "null",
+                                                            "string"
+                                                          ]
+                                                        },
+                                                        "parserXml": {
+                                                          "type": [
+                                                            "null",
+                                                            "string"
+                                                          ]
+                                                        },
+                                                        "prevParser": {
+                                                          "properties": {
+                                                            "deviceType": {
+                                                              "properties": {
+                                                                "accessProtocols": {
+                                                                  "type": [
+                                                                    "null",
+                                                                    "string"
+                                                                  ]
+                                                                },
+                                                                "category": {
+                                                                  "type": [
+                                                                    "null",
+                                                                    "string"
+                                                                  ]
+                                                                },
+                                                                "jobWeight": {
+                                                                  "type": [
+                                                                    "null",
+                                                                    "integer"
+                                                                  ]
+                                                                },
+                                                                "model": {
+                                                                  "type": [
+                                                                    "null",
+                                                                    "string"
+                                                                  ]
+                                                                },
+                                                                "services": {
+                                                                  "type": [
+                                                                    "null",
+                                                                    "string"
+                                                                  ]
+                                                                },
+                                                                "vendor": {
+                                                                  "type": [
+                                                                    "null",
+                                                                    "string"
+                                                                  ]
+                                                                },
+                                                                "version": {
+                                                                  "type": [
+                                                                    "null",
+                                                                    "string"
+                                                                  ]
+                                                                }
+                                                              },
+                                                              "type": [
+                                                                "null",
+                                                                "object"
+                                                              ]
+                                                            },
+                                                            "enabled": {
+                                                              "type": [
+                                                                "null",
+                                                                "boolean"
+                                                              ]
+                                                            },
+                                                            "name": {
+                                                              "type": [
+                                                                "null",
+                                                                "string"
+                                                              ]
+                                                            },
+                                                            "parserXml": {
+                                                              "type": [
+                                                                "null",
+                                                                "string"
+                                                              ]
+                                                            },
+                                                            "prevParser": {
+                                                              "properties": {
+                                                                "deviceType": {
+                                                                  "properties": {
+                                                                    "accessProtocols": {
+                                                                      "type": [
+                                                                        "null",
+                                                                        "string"
+                                                                      ]
+                                                                    },
+                                                                    "category": {
+                                                                      "type": [
+                                                                        "null",
+                                                                        "string"
+                                                                      ]
+                                                                    },
+                                                                    "jobWeight": {
+                                                                      "type": [
+                                                                        "null",
+                                                                        "integer"
+                                                                      ]
+                                                                    },
+                                                                    "model": {
+                                                                      "type": [
+                                                                        "null",
+                                                                        "string"
+                                                                      ]
+                                                                    },
+                                                                    "vendor": {
+                                                                      "type": [
+                                                                        "null",
+                                                                        "string"
+                                                                      ]
+                                                                    },
+                                                                    "version": {
+                                                                      "type": [
+                                                                        "null",
+                                                                        "string"
+                                                                      ]
+                                                                    }
+                                                                  },
+                                                                  "type": [
+                                                                    "null",
+                                                                    "object"
+                                                                  ]
+                                                                },
+                                                                "enabled": {
+                                                                  "type": [
+                                                                    "null",
+                                                                    "boolean"
+                                                                  ]
+                                                                },
+                                                                "name": {
+                                                                  "type": [
+                                                                    "null",
+                                                                    "string"
+                                                                  ]
+                                                                },
+                                                                "parserXml": {
+                                                                  "type": [
+                                                                    "null",
+                                                                    "string"
+                                                                  ]
+                                                                },
+                                                                "prevParser": {
+                                                                  "properties": {
+                                                                    "deviceType": {
+                                                                      "properties": {
+                                                                        "accessProtocols": {
+                                                                          "type": [
+                                                                            "null",
+                                                                            "string"
+                                                                          ]
+                                                                        },
+                                                                        "category": {
+                                                                          "type": [
+                                                                            "null",
+                                                                            "string"
+                                                                          ]
+                                                                        },
+                                                                        "jobWeight": {
+                                                                          "type": [
+                                                                            "null",
+                                                                            "integer"
+                                                                          ]
+                                                                        },
+                                                                        "model": {
+                                                                          "type": [
+                                                                            "null",
+                                                                            "string"
+                                                                          ]
+                                                                        },
+                                                                        "vendor": {
+                                                                          "type": [
+                                                                            "null",
+                                                                            "string"
+                                                                          ]
+                                                                        },
+                                                                        "version": {
+                                                                          "type": [
+                                                                            "null",
+                                                                            "string"
+                                                                          ]
+                                                                        }
+                                                                      },
+                                                                      "type": [
+                                                                        "null",
+                                                                        "object"
+                                                                      ]
+                                                                    },
+                                                                    "enabled": {
+                                                                      "type": [
+                                                                        "null",
+                                                                        "boolean"
+                                                                      ]
+                                                                    },
+                                                                    "name": {
+                                                                      "type": [
+                                                                        "null",
+                                                                        "string"
+                                                                      ]
+                                                                    },
+                                                                    "parserXml": {
+                                                                      "type": [
+                                                                        "null",
+                                                                        "string"
+                                                                      ]
+                                                                    },
+                                                                    "prevParser": {
+                                                                      "properties": {
+                                                                        "deviceType": {
+                                                                          "properties": {
+                                                                            "accessProtocols": {
+                                                                              "type": [
+                                                                                "null",
+                                                                                "string"
+                                                                              ]
+                                                                            },
+                                                                            "category": {
+                                                                              "type": [
+                                                                                "null",
+                                                                                "string"
+                                                                              ]
+                                                                            },
+                                                                            "jobWeight": {
+                                                                              "type": [
+                                                                                "null",
+                                                                                "integer"
+                                                                              ]
+                                                                            },
+                                                                            "model": {
+                                                                              "type": [
+                                                                                "null",
+                                                                                "string"
+                                                                              ]
+                                                                            },
+                                                                            "services": {
+                                                                              "type": [
+                                                                                "null",
+                                                                                "string"
+                                                                              ]
+                                                                            },
+                                                                            "vendor": {
+                                                                              "type": [
+                                                                                "null",
+                                                                                "string"
+                                                                              ]
+                                                                            },
+                                                                            "version": {
+                                                                              "type": [
+                                                                                "null",
+                                                                                "string"
+                                                                              ]
+                                                                            }
+                                                                          },
+                                                                          "type": [
+                                                                            "null",
+                                                                            "object"
+                                                                          ]
+                                                                        },
+                                                                        "enabled": {
+                                                                          "type": [
+                                                                            "null",
+                                                                            "boolean"
+                                                                          ]
+                                                                        },
+                                                                        "name": {
+                                                                          "type": [
+                                                                            "null",
+                                                                            "string"
+                                                                          ]
+                                                                        },
+                                                                        "parserXml": {
+                                                                          "type": [
+                                                                            "null",
+                                                                            "string"
+                                                                          ]
+                                                                        },
+                                                                        "prevParser": {
+                                                                          "properties": {
+                                                                            "deviceType": {
+                                                                              "properties": {
+                                                                                "category": {
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "string"
+                                                                                  ]
+                                                                                },
+                                                                                "jobWeight": {
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "integer"
+                                                                                  ]
+                                                                                },
+                                                                                "model": {
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "string"
+                                                                                  ]
+                                                                                },
+                                                                                "services": {
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "string"
+                                                                                  ]
+                                                                                },
+                                                                                "vendor": {
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "string"
+                                                                                  ]
+                                                                                },
+                                                                                "version": {
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "string"
+                                                                                  ]
+                                                                                }
+                                                                              },
+                                                                              "type": [
+                                                                                "null",
+                                                                                "object"
+                                                                              ]
+                                                                            },
+                                                                            "enabled": {
+                                                                              "type": [
+                                                                                "null",
+                                                                                "boolean"
+                                                                              ]
+                                                                            },
+                                                                            "name": {
+                                                                              "type": [
+                                                                                "null",
+                                                                                "string"
+                                                                              ]
+                                                                            },
+                                                                            "parserXml": {
+                                                                              "type": [
+                                                                                "null",
+                                                                                "string"
+                                                                              ]
+                                                                            },
+                                                                            "prevParser": {
+                                                                              "properties": {
+                                                                                "deviceType": {
+                                                                                  "properties": {
+                                                                                    "category": {
+                                                                                      "type": [
+                                                                                        "null",
+                                                                                        "string"
+                                                                                      ]
+                                                                                    },
+                                                                                    "jobWeight": {
+                                                                                      "type": [
+                                                                                        "null",
+                                                                                        "integer"
+                                                                                      ]
+                                                                                    },
+                                                                                    "model": {
+                                                                                      "type": [
+                                                                                        "null",
+                                                                                        "string"
+                                                                                      ]
+                                                                                    },
+                                                                                    "vendor": {
+                                                                                      "type": [
+                                                                                        "null",
+                                                                                        "string"
+                                                                                      ]
+                                                                                    },
+                                                                                    "version": {
+                                                                                      "type": [
+                                                                                        "null",
+                                                                                        "string"
+                                                                                      ]
+                                                                                    }
+                                                                                  },
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "object"
+                                                                                  ]
+                                                                                },
+                                                                                "enabled": {
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "boolean"
+                                                                                  ]
+                                                                                },
+                                                                                "name": {
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "string"
+                                                                                  ]
+                                                                                },
+                                                                                "parserXml": {
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "string"
+                                                                                  ]
+                                                                                },
+                                                                                "prevParser": {
+                                                                                  "properties": {
+                                                                                    "deviceType": {
+                                                                                      "properties": {
+                                                                                        "accessProtocols": {
+                                                                                          "type": [
+                                                                                            "null",
+                                                                                            "string"
+                                                                                          ]
+                                                                                        },
+                                                                                        "category": {
+                                                                                          "type": [
+                                                                                            "null",
+                                                                                            "string"
+                                                                                          ]
+                                                                                        },
+                                                                                        "jobWeight": {
+                                                                                          "type": [
+                                                                                            "null",
+                                                                                            "integer"
+                                                                                          ]
+                                                                                        },
+                                                                                        "model": {
+                                                                                          "type": [
+                                                                                            "null",
+                                                                                            "string"
+                                                                                          ]
+                                                                                        },
+                                                                                        "vendor": {
+                                                                                          "type": [
+                                                                                            "null",
+                                                                                            "string"
+                                                                                          ]
+                                                                                        },
+                                                                                        "version": {
+                                                                                          "type": [
+                                                                                            "null",
+                                                                                            "string"
+                                                                                          ]
+                                                                                        }
+                                                                                      },
+                                                                                      "type": [
+                                                                                        "null",
+                                                                                        "object"
+                                                                                      ]
+                                                                                    },
+                                                                                    "enabled": {
+                                                                                      "type": [
+                                                                                        "null",
+                                                                                        "boolean"
+                                                                                      ]
+                                                                                    },
+                                                                                    "name": {
+                                                                                      "type": [
+                                                                                        "null",
+                                                                                        "string"
+                                                                                      ]
+                                                                                    },
+                                                                                    "parserXml": {
+                                                                                      "type": [
+                                                                                        "null",
+                                                                                        "string"
+                                                                                      ]
+                                                                                    },
+                                                                                    "prevParser": {
+                                                                                      "properties": {
+                                                                                        "enabled": {
+                                                                                          "type": [
+                                                                                            "null",
+                                                                                            "boolean"
+                                                                                          ]
+                                                                                        },
+                                                                                        "name": {
+                                                                                          "type": [
+                                                                                            "null",
+                                                                                            "string"
+                                                                                          ]
+                                                                                        },
+                                                                                        "parserXml": {
+                                                                                          "type": [
+                                                                                            "null",
+                                                                                            "string"
+                                                                                          ]
+                                                                                        },
+                                                                                        "prevParser": {
+                                                                                          "properties": {
+                                                                                            "enabled": {
+                                                                                              "type": [
+                                                                                                "null",
+                                                                                                "boolean"
+                                                                                              ]
+                                                                                            },
+                                                                                            "name": {
+                                                                                              "type": [
+                                                                                                "null",
+                                                                                                "string"
+                                                                                              ]
+                                                                                            },
+                                                                                            "parserXml": {
+                                                                                              "type": [
+                                                                                                "null",
+                                                                                                "string"
+                                                                                              ]
+                                                                                            },
+                                                                                            "testEvent": {
+                                                                                              "type": [
+                                                                                                "null",
+                                                                                                "string"
+                                                                                              ]
+                                                                                            }
+                                                                                          },
+                                                                                          "type": [
+                                                                                            "null",
+                                                                                            "object"
+                                                                                          ]
+                                                                                        },
+                                                                                        "testEvent": {
+                                                                                          "type": [
+                                                                                            "null",
+                                                                                            "string"
+                                                                                          ]
+                                                                                        }
+                                                                                      },
+                                                                                      "type": [
+                                                                                        "null",
+                                                                                        "object"
+                                                                                      ]
+                                                                                    },
+                                                                                    "testEvent": {
+                                                                                      "type": [
+                                                                                        "null",
+                                                                                        "string"
+                                                                                      ]
+                                                                                    }
+                                                                                  },
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "object"
+                                                                                  ]
+                                                                                },
+                                                                                "testEvent": {
+                                                                                  "type": [
+                                                                                    "null",
+                                                                                    "string"
+                                                                                  ]
+                                                                                }
+                                                                              },
+                                                                              "type": [
+                                                                                "null",
+                                                                                "object"
+                                                                              ]
+                                                                            },
+                                                                            "testEvent": {
+                                                                              "type": [
+                                                                                "null",
+                                                                                "string"
+                                                                              ]
+                                                                            }
+                                                                          },
+                                                                          "type": [
+                                                                            "null",
+                                                                            "object"
+                                                                          ]
+                                                                        },
+                                                                        "testEvent": {
+                                                                          "type": [
+                                                                            "null",
+                                                                            "string"
+                                                                          ]
+                                                                        }
+                                                                      },
+                                                                      "type": [
+                                                                        "null",
+                                                                        "object"
+                                                                      ]
+                                                                    },
+                                                                    "testEvent": {
+                                                                      "type": [
+                                                                        "null",
+                                                                        "string"
+                                                                      ]
+                                                                    }
+                                                                  },
+                                                                  "type": [
+                                                                    "null",
+                                                                    "object"
+                                                                  ]
+                                                                },
+                                                                "testEvent": {
+                                                                  "type": [
+                                                                    "null",
+                                                                    "string"
+                                                                  ]
+                                                                }
+                                                              },
+                                                              "type": [
+                                                                "null",
+                                                                "object"
+                                                              ]
+                                                            },
+                                                            "testEvent": {
+                                                              "type": [
+                                                                "null",
+                                                                "string"
+                                                              ]
+                                                            }
+                                                          },
+                                                          "type": [
+                                                            "null",
+                                                            "object"
+                                                          ]
+                                                        },
+                                                        "testEvent": {
+                                                          "type": [
+                                                            "null",
+                                                            "string"
+                                                          ]
+                                                        }
+                                                      },
+                                                      "type": [
+                                                        "null",
+                                                        "object"
+                                                      ]
+                                                    },
+                                                    "testEvent": {
+                                                      "type": [
+                                                        "null",
+                                                        "string"
+                                                      ]
+                                                    }
+                                                  },
+                                                  "type": [
+                                                    "null",
+                                                    "object"
+                                                  ]
+                                                },
+                                                "testEvent": {
+                                                  "type": [
+                                                    "null",
+                                                    "string"
+                                                  ]
+                                                }
+                                              },
+                                              "type": [
+                                                "null",
+                                                "object"
+                                              ]
+                                            },
+                                            "testEvent": {
+                                              "type": [
+                                                "null",
+                                                "string"
+                                              ]
+                                            }
+                                          },
+                                          "type": [
+                                            "null",
+                                            "object"
+                                          ]
+                                        },
+                                        "testEvent": {
+                                          "type": [
+                                            "null",
+                                            "string"
+                                          ]
+                                        }
+                                      },
+                                      "type": [
+                                        "null",
+                                        "object"
+                                      ]
+                                    },
+                                    "testEvent": {
+                                      "type": [
+                                        "null",
+                                        "string"
+                                      ]
+                                    }
+                                  },
+                                  "type": [
+                                    "null",
+                                    "object"
+                                  ]
+                                },
+                                "testEvent": {
+                                  "type": [
+                                    "null",
+                                    "string"
+                                  ]
+                                }
+                              },
+                              "type": [
+                                "null",
+                                "object"
+                              ]
+                            },
+                            "testEvent": {
+                              "type": [
+                                "null",
+                                "string"
+                              ]
+                            }
+                          },
+                          "type": [
+                            "null",
+                            "object"
+                          ]
+                        },
+                        "testEvent": {
+                          "type": [
+                            "null",
+                            "string"
+                          ]
+                        }
+                      },
+                      "type": [
+                        "null",
+                        "object"
+                      ]
+                    },
+                    "testEvent": {
+                      "type": [
+                        "null",
+                        "string"
+                      ]
+                    }
+                  },
+                  "type": [
+                    "null",
+                    "object"
+                  ]
+                },
+                "testEvent": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                }
+              },
+              "type": [
+                "null",
+                "object"
+              ]
+            },
+            "testEvent": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          },
+          "type": [
+            "null",
+            "object"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    },
+    "hwModel": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "hwSerialNum": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "hwVendor": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "interfaces": {
+      "properties": {
+        "networkinterface": {
+          "items": {
+            "properties": {
+              "adminStatus": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "description": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "inSpeed": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "ipv4Addr": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "ipv4IsVirtual": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              "ipv4Mask": {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              "ipv6Addr": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "ipv6Prefix": {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              "isCritical": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              "isMonitor": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              "isTrunk": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              "isWAN": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              "macAddr": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "macIsVirtual": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              "name": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "network": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "operStatus": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "outSpeed": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "snmpIndex": {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              "speed": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "type": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "type": [
+            "null",
+            "array"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    },
+    "name": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "naturalId": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "osEdition": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "osSerialNum": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "param": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "perfMonStatus": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "primaryContactUser": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "processors": {
+      "properties": {
+        "processor": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    },
+    "properties": {
+      "properties": {
+        "customproperty": {
+          "items": {
+            "properties": {
+              "matched": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              "propertyDef": {
+                "properties": {
+                  "displayInCMDB": {
+                    "type": [
+                      "null",
+                      "boolean"
+                    ]
+                  },
+                  "displayName": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "groupKey": {
+                    "type": [
+                      "null",
+                      "boolean"
+                    ]
+                  },
+                  "propertyName": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "subValueType": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "valueType": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  }
+                },
+                "type": [
+                  "null",
+                  "object"
+                ]
+              },
+              "propertyName": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "propertyValue": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "updated": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "type": [
+            "null",
+            "array"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    },
+    "secondaryContactUser": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "shallowDiscovery": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "softwarePatches": {
+      "properties": {
+        "softwarepatch": {
+          "items": {
+            "properties": {
+              "description": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "installTime": {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              "installTimeAsDate": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "installTimeInSec": {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              "installedBy": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "name": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "type": [
+            "null",
+            "array"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    },
+    "softwareServices": {
+      "properties": {
+        "softwareservice": {
+          "items": {
+            "properties": {
+              "description": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "displayName": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "name": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "path": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "startMode": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "startedFlag": {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              "state": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "status": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "type": [
+            "null",
+            "array"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    },
+    "status": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "storages": {
+      "properties": {
+        "storage": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    },
+    "systemUpTime": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "unmanaged": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "updateMethod": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "version": {
+      "type": [
+        "null",
+        "string"
+      ]
+    }
+  },
+  "title": "fortisim",
+  "type": "object"
+}

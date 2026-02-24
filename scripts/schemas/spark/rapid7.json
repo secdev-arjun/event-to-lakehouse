@@ -40,6 +40,64 @@
     },
     {
       "metadata": {},
+      "name": "files",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "attributes",
+              "nullable": true,
+              "type": {
+                "containsNull": true,
+                "elementType": {
+                  "fields": [
+                    {
+                      "metadata": {},
+                      "name": "name",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    {
+                      "metadata": {},
+                      "name": "value",
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  ],
+                  "type": "struct"
+                },
+                "type": "array"
+              }
+            },
+            {
+              "metadata": {},
+              "name": "name",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "size",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "type",
+              "nullable": true,
+              "type": "string"
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
       "name": "history",
       "nullable": true,
       "type": {
@@ -104,6 +162,32 @@
       }
     },
     { "metadata": {}, "name": "id", "nullable": true, "type": "long" },
+    {
+      "metadata": {},
+      "name": "ids",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "id",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "source",
+              "nullable": true,
+              "type": "string"
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
     { "metadata": {}, "name": "ip", "nullable": true, "type": "string" },
     {
       "metadata": {},
@@ -153,6 +237,82 @@
           },
           {
             "metadata": {},
+            "name": "cpe",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "edition",
+                  "nullable": true,
+                  "type": "string"
+                },
+                {
+                  "metadata": {},
+                  "name": "part",
+                  "nullable": true,
+                  "type": "string"
+                },
+                {
+                  "metadata": {},
+                  "name": "product",
+                  "nullable": true,
+                  "type": "string"
+                },
+                {
+                  "metadata": {},
+                  "name": "swEdition",
+                  "nullable": true,
+                  "type": "string"
+                },
+                {
+                  "metadata": {},
+                  "name": "targetHW",
+                  "nullable": true,
+                  "type": "string"
+                },
+                {
+                  "metadata": {},
+                  "name": "targetSW",
+                  "nullable": true,
+                  "type": "string"
+                },
+                {
+                  "metadata": {},
+                  "name": "update",
+                  "nullable": true,
+                  "type": "string"
+                },
+                {
+                  "metadata": {},
+                  "name": "v2.2",
+                  "nullable": true,
+                  "type": "string"
+                },
+                {
+                  "metadata": {},
+                  "name": "v2.3",
+                  "nullable": true,
+                  "type": "string"
+                },
+                {
+                  "metadata": {},
+                  "name": "vendor",
+                  "nullable": true,
+                  "type": "string"
+                },
+                {
+                  "metadata": {},
+                  "name": "version",
+                  "nullable": true,
+                  "type": "string"
+                }
+              ],
+              "type": "struct"
+            }
+          },
+          {
+            "metadata": {},
             "name": "description",
             "nullable": true,
             "type": "string"
@@ -173,6 +333,12 @@
           {
             "metadata": {},
             "name": "systemName",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "type",
             "nullable": true,
             "type": "string"
           },
@@ -224,6 +390,32 @@
                     {
                       "metadata": {},
                       "name": "value",
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  ],
+                  "type": "struct"
+                },
+                "type": "array"
+              }
+            },
+            {
+              "metadata": {},
+              "name": "databases",
+              "nullable": true,
+              "type": {
+                "containsNull": true,
+                "elementType": {
+                  "fields": [
+                    {
+                      "metadata": {},
+                      "name": "id",
+                      "nullable": true,
+                      "type": "long"
+                    },
+                    {
+                      "metadata": {},
+                      "name": "name",
                       "nullable": true,
                       "type": "string"
                     }
@@ -317,6 +509,32 @@
           "fields": [
             {
               "metadata": {},
+              "name": "configurations",
+              "nullable": true,
+              "type": {
+                "containsNull": true,
+                "elementType": {
+                  "fields": [
+                    {
+                      "metadata": {},
+                      "name": "name",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    {
+                      "metadata": {},
+                      "name": "value",
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  ],
+                  "type": "struct"
+                },
+                "type": "array"
+              }
+            },
+            {
+              "metadata": {},
               "name": "cpe",
               "nullable": true,
               "type": {
@@ -330,6 +548,12 @@
                   {
                     "metadata": {},
                     "name": "product",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  {
+                    "metadata": {},
+                    "name": "update",
                     "nullable": true,
                     "type": "string"
                   },
@@ -377,6 +601,12 @@
             {
               "metadata": {},
               "name": "product",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "type",
               "nullable": true,
               "type": "string"
             },

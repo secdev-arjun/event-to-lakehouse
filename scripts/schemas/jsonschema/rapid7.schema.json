@@ -1,0 +1,777 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "properties": {
+    "addresses": {
+      "items": {
+        "properties": {
+          "ip": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mac": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": [
+          "null",
+          "object"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "assessedForPolicies": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "assessedForVulnerabilities": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "files": {
+      "items": {
+        "properties": {
+          "attributes": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "value": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                }
+              },
+              "type": [
+                "null",
+                "object"
+              ]
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "size": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": [
+          "null",
+          "object"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "history": {
+      "items": {
+        "properties": {
+          "date": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scanId": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          }
+        },
+        "type": [
+          "null",
+          "object"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "hostName": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "hostNames": {
+      "items": {
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "source": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": [
+          "null",
+          "object"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "id": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "ids": {
+      "items": {
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "source": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": [
+          "null",
+          "object"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "ip": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "links": {
+      "items": {
+        "properties": {
+          "href": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": [
+          "null",
+          "object"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "mac": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "os": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "osCertainty": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "osFingerprint": {
+      "properties": {
+        "architecture": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "cpe": {
+          "properties": {
+            "edition": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "part": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "product": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "swEdition": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "targetHW": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "targetSW": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "update": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "v2.2": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "v2.3": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "vendor": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "version": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          },
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "description": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "family": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "id": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "product": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "systemName": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "type": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "vendor": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "version": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    },
+    "rawRiskScore": {
+      "type": [
+        "null",
+        "number"
+      ]
+    },
+    "riskScore": {
+      "type": [
+        "null",
+        "number"
+      ]
+    },
+    "services": {
+      "items": {
+        "properties": {
+          "configurations": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "value": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                }
+              },
+              "type": [
+                "null",
+                "object"
+              ]
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "databases": {
+            "items": {
+              "properties": {
+                "id": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ]
+                },
+                "name": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                }
+              },
+              "type": [
+                "null",
+                "object"
+              ]
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "family": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "links": {
+            "items": {
+              "properties": {
+                "href": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "rel": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                }
+              },
+              "type": [
+                "null",
+                "object"
+              ]
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "port": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "product": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "protocol": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vendor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": [
+          "null",
+          "object"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "software": {
+      "items": {
+        "properties": {
+          "configurations": {
+            "items": {
+              "properties": {
+                "name": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "value": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                }
+              },
+              "type": [
+                "null",
+                "object"
+              ]
+            },
+            "type": [
+              "null",
+              "array"
+            ]
+          },
+          "cpe": {
+            "properties": {
+              "part": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "product": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "update": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "v2.2": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "v2.3": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "vendor": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "version": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            },
+            "type": [
+              "null",
+              "object"
+            ]
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "family": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "product": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "vendor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": [
+          "null",
+          "object"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "type": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "userGroups": {
+      "items": {
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": [
+          "null",
+          "object"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "users": {
+      "items": {
+        "properties": {
+          "fullName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": [
+          "null",
+          "object"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "vulnerabilities": {
+      "properties": {
+        "critical": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "exploits": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "malwareKits": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "moderate": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "severe": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "total": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        }
+      },
+      "type": [
+        "null",
+        "object"
+      ]
+    }
+  },
+  "title": "rapid7",
+  "type": "object"
+}

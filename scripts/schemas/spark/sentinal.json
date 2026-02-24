@@ -1,0 +1,566 @@
+{
+  "fields": [
+    { "metadata": {}, "name": "accountId", "nullable": true, "type": "string" },
+    {
+      "metadata": {},
+      "name": "accountName",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "activeDirectory",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "computerDistinguishedName",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "computerMemberOf",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": "string",
+              "type": "array"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "lastUserDistinguishedName",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "lastUserMemberOf",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": "string",
+              "type": "array"
+            }
+          },
+          {
+            "metadata": {},
+            "name": "userPrincipalName",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "activeProtection",
+      "nullable": true,
+      "type": { "containsNull": true, "elementType": "string", "type": "array" }
+    },
+    {
+      "metadata": {},
+      "name": "activeThreats",
+      "nullable": true,
+      "type": "long"
+    },
+    {
+      "metadata": {},
+      "name": "agentVersion",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "allowRemoteShell",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "appsVulnerabilityStatus",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "computerName",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "consoleMigrationStatus",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "containerizedWorkloadCounts",
+      "nullable": true,
+      "type": "string"
+    },
+    { "metadata": {}, "name": "coreCount", "nullable": true, "type": "long" },
+    { "metadata": {}, "name": "cpuCount", "nullable": true, "type": "long" },
+    { "metadata": {}, "name": "cpuId", "nullable": true, "type": "string" },
+    { "metadata": {}, "name": "createdAt", "nullable": true, "type": "string" },
+    {
+      "metadata": {},
+      "name": "detectionState",
+      "nullable": true,
+      "type": "string"
+    },
+    { "metadata": {}, "name": "domain", "nullable": true, "type": "string" },
+    {
+      "metadata": {},
+      "name": "encryptedApplications",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "externalId",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "externalIp",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "firewallEnabled",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "firstFullModeTime",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "fullDiskScanLastUpdatedAt",
+      "nullable": true,
+      "type": "string"
+    },
+    { "metadata": {}, "name": "groupId", "nullable": true, "type": "string" },
+    { "metadata": {}, "name": "groupIp", "nullable": true, "type": "string" },
+    { "metadata": {}, "name": "groupName", "nullable": true, "type": "string" },
+    {
+      "metadata": {},
+      "name": "hasContainerizedWorkload",
+      "nullable": true,
+      "type": "boolean"
+    },
+    { "metadata": {}, "name": "id", "nullable": true, "type": "string" },
+    {
+      "metadata": {},
+      "name": "inRemoteShellSession",
+      "nullable": true,
+      "type": "boolean"
+    },
+    { "metadata": {}, "name": "infected", "nullable": true, "type": "boolean" },
+    {
+      "metadata": {},
+      "name": "installerType",
+      "nullable": true,
+      "type": "string"
+    },
+    { "metadata": {}, "name": "isActive", "nullable": true, "type": "boolean" },
+    {
+      "metadata": {},
+      "name": "isAdConnector",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "isDecommissioned",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "isHyperAutomate",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "isPendingUninstall",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "isUninstalled",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "isUpToDate",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "lastActiveDate",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "lastIpToMgmt",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "lastLoggedInUserName",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "lastSuccessfulScanDate",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "licenseKey",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "locationEnabled",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "locationType",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "locations",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "id",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "name",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "scope",
+              "nullable": true,
+              "type": "string"
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "machineSid",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "machineType",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "missingPermissions",
+      "nullable": true,
+      "type": { "containsNull": true, "elementType": "string", "type": "array" }
+    },
+    {
+      "metadata": {},
+      "name": "mitigationMode",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "mitigationModeSuspicious",
+      "nullable": true,
+      "type": "string"
+    },
+    { "metadata": {}, "name": "modelName", "nullable": true, "type": "string" },
+    {
+      "metadata": {},
+      "name": "networkInterfaces",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "gatewayIp",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "gatewayMacAddress",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "id",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "inet",
+              "nullable": true,
+              "type": {
+                "containsNull": true,
+                "elementType": "string",
+                "type": "array"
+              }
+            },
+            {
+              "metadata": {},
+              "name": "inet6",
+              "nullable": true,
+              "type": {
+                "containsNull": true,
+                "elementType": "string",
+                "type": "array"
+              }
+            },
+            {
+              "metadata": {},
+              "name": "name",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "physical",
+              "nullable": true,
+              "type": "string"
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "networkQuarantineEnabled",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "networkStatus",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "operationalState",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "operationalStateExpiration",
+      "nullable": true,
+      "type": "string"
+    },
+    { "metadata": {}, "name": "osArch", "nullable": true, "type": "string" },
+    { "metadata": {}, "name": "osName", "nullable": true, "type": "string" },
+    {
+      "metadata": {},
+      "name": "osRevision",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "osStartTime",
+      "nullable": true,
+      "type": "string"
+    },
+    { "metadata": {}, "name": "osType", "nullable": true, "type": "string" },
+    {
+      "metadata": {},
+      "name": "osUsername",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "proxyStates",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "console",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "deepVisibility",
+            "nullable": true,
+            "type": "string"
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "rangerStatus",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "rangerVersion",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "registeredAt",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "remoteProfilingState",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "remoteProfilingStateExpiration",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "scanAbortedAt",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "scanFinishedAt",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "scanStartedAt",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "scanStatus",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "serialNumber",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "showAlertIcon",
+      "nullable": true,
+      "type": "boolean"
+    },
+    { "metadata": {}, "name": "siteId", "nullable": true, "type": "string" },
+    { "metadata": {}, "name": "siteName", "nullable": true, "type": "string" },
+    {
+      "metadata": {},
+      "name": "storageName",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "storageType",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "tags",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "sentinelone",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": "string",
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "threatRebootRequired",
+      "nullable": true,
+      "type": "boolean"
+    },
+    { "metadata": {}, "name": "totalMemory", "nullable": true, "type": "long" },
+    { "metadata": {}, "name": "updatedAt", "nullable": true, "type": "string" },
+    {
+      "metadata": {},
+      "name": "userActionsNeeded",
+      "nullable": true,
+      "type": { "containsNull": true, "elementType": "string", "type": "array" }
+    },
+    { "metadata": {}, "name": "uuid", "nullable": true, "type": "string" }
+  ],
+  "type": "struct"
+}
