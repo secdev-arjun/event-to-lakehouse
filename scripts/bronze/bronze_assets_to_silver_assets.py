@@ -2,6 +2,7 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
+import json
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
@@ -17,7 +18,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 
-from mapping.target import TARGET_FIELDS, ensure_columns
+from mapping.target import TARGET_FIELDS, ensure_columns, add_payload_hash
 from mapping.sources.rapid7 import RAPID7_TOPIC, normalize_rapid7
 from mapping.sources.fortisiem import FORTI_TOPIC, normalize_fortisiem
 from mapping.sources.sentinel import SENTINEL_TOPIC, normalize_sentinel
@@ -43,8 +44,13 @@ spark.conf.set("spark.sql.files.ignoreCorruptFiles", "true")
 # Config
 # ------------------------------------------------------------------------------
 
-TARGET_TABLE = "iceberg.silver.assets"
-HISTORY_TABLE = "iceberg.silver.assets_history"
+CONFORMED_TABLE = os.getenv("CONFORMED_TABLE", "iceberg.silver.assets_conformed")
+HISTORY_TABLE = os.getenv("HISTORY_TABLE", "iceberg.silver.assets_history")
+
+CONFORMED_CONTRACT_PATH = os.getenv(
+    "CONFORMED_CONTRACT_PATH",
+    "/opt/spark/scripts/bronze/contracts/assets_silver_contract.yaml"
+)
 
 
 def _with_trailing_slash(path: str) -> str:
@@ -95,16 +101,16 @@ HISTORY_FIELDS = TARGET_FIELDS + HISTORY_EXTRA_FIELDS
 # Table helpers
 # ------------------------------------------------------------------------------
 
-def ensure_table(df):
-    if not spark.catalog.tableExists(TARGET_TABLE):
-        df.limit(0).writeTo(TARGET_TABLE).create()
+def ensure_table(df, table_name: str):
+    if not spark.catalog.tableExists(table_name):
+        df.limit(0).writeTo(table_name).create()
         return
 
-    existing_fields = {f.name: f.dataType for f in spark.table(TARGET_TABLE).schema.fields}
+    existing_fields = {f.name: f.dataType for f in spark.table(table_name).schema.fields}
     missing = [f for f in TARGET_FIELDS if f.name not in existing_fields]
     if missing:
         cols_sql = ", ".join([f"{f.name} {f.dataType.simpleString()}" for f in missing])
-        spark.sql(f"ALTER TABLE {TARGET_TABLE} ADD COLUMNS ({cols_sql})")
+        spark.sql(f"ALTER TABLE {table_name} ADD COLUMNS ({cols_sql})")
 
 def ensure_history_table(df):
     if not spark.catalog.tableExists(HISTORY_TABLE):
@@ -142,16 +148,21 @@ def _with_history_fields(df):
     return ensure_columns(df, HISTORY_FIELDS)
 
 
-def merge_history_with_retry(incoming_df, retries: int = 3, sleep_sec: float = 2.0):
+def merge_history_with_retry(
+    incoming_df,
+    current_table: str,
+    retries: int = 3,
+    sleep_sec: float = 2.0
+):
     incoming_df = incoming_df.persist()
     try:
         if not incoming_df.take(1):
             return
 
         current_df = None
-        if spark.catalog.tableExists(TARGET_TABLE):
+        if spark.catalog.tableExists(current_table):
             current_df = (
-                spark.table(TARGET_TABLE)
+                spark.table(current_table)
                 .select("entity_key_hash", "payload_hash")
                 .withColumnRenamed("payload_hash", "cur_payload_hash")
             )
@@ -236,14 +247,14 @@ def merge_history_with_retry(incoming_df, retries: int = 3, sleep_sec: float = 2
         incoming_df.unpersist()
 
 
-def merge_with_retry(df, retries: int = 3, sleep_sec: float = 2.0):
+def merge_with_retry(df, table_name: str, retries: int = 3, sleep_sec: float = 2.0):
     # Materialize the source to avoid non-deterministic expressions in MERGE.
     df = df.persist()
     try:
         if not df.take(1):
             return
 
-        ensure_table(df)
+        ensure_table(df, table_name)
 
         # Freeze the dataset so MERGE sees deterministic input.
         df.count()
@@ -262,7 +273,7 @@ def merge_with_retry(df, retries: int = 3, sleep_sec: float = 2.0):
         ])
 
         merge_sql = f"""
-            MERGE INTO {TARGET_TABLE} t
+            MERGE INTO {table_name} t
             USING incoming_updates s
             ON t.entity_key_hash = s.entity_key_hash
             WHEN MATCHED AND t.payload_hash = s.payload_hash THEN
@@ -286,6 +297,97 @@ def merge_with_retry(df, retries: int = 3, sleep_sec: float = 2.0):
                 raise last_err
     finally:
         df.unpersist()
+
+
+# ------------------------------------------------------------------------------
+# Conformance rules (merged into bronze_to_silver)
+# ------------------------------------------------------------------------------
+
+def _read_contract_text(path: str) -> str:
+    if path.startswith("s3a://") or path.startswith("s3://"):
+        rows = spark.read.text(path).collect()
+        return "\n".join([r["value"] for r in rows])
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def load_contract(path: str) -> dict:
+    raw = _read_contract_text(path).strip()
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        try:
+            import yaml  # type: ignore
+            return yaml.safe_load(raw)
+        except Exception as e:
+            raise RuntimeError(f"Failed to parse contract at {path}: {e}")
+
+
+def apply_rules(col_expr, rules):
+    if not rules:
+        return col_expr
+    expr = col_expr
+    for rule in rules:
+        op = rule.get("op")
+        if op == "trim":
+            expr = F.trim(expr)
+        elif op == "lower":
+            expr = F.lower(expr)
+        elif op == "upper":
+            expr = F.upper(expr)
+        elif op == "regex_replace":
+            expr = F.regexp_replace(expr, rule.get("pattern", ""), rule.get("replacement", ""))
+        elif op == "split":
+            expr = F.split(expr, rule.get("delimiter", ","))
+        elif op == "scale":
+            expr = expr * lit(rule.get("factor", 1.0))
+        elif op == "scale_if_gt":
+            value = rule.get("value")
+            factor = rule.get("factor", 1.0)
+            expr = F.when(expr > lit(value), expr * lit(factor)).otherwise(expr)
+        elif op == "clamp":
+            min_v = rule.get("min")
+            max_v = rule.get("max")
+            if min_v is not None:
+                expr = F.when(expr < lit(min_v), lit(min_v)).otherwise(expr)
+            if max_v is not None:
+                expr = F.when(expr > lit(max_v), lit(max_v)).otherwise(expr)
+        elif op == "map":
+            mapping = rule.get("values", {})
+            default = rule.get("default")
+            if mapping:
+                map_expr = F.create_map([lit(x) for kv in mapping.items() for x in kv])
+                expr = map_expr.getItem(expr)
+                if default is not None:
+                    expr = F.when(expr.isNull(), lit(default)).otherwise(expr)
+        elif op == "array_distinct":
+            expr = F.array_distinct(expr)
+        elif op == "array_sort":
+            expr = F.array_sort(expr)
+        elif op == "array_filter_nulls":
+            expr = F.filter(expr, lambda x: x.isNotNull())
+        elif op == "to_timestamp":
+            expr = F.to_timestamp(expr, rule.get("format"))
+        else:
+            expr = expr
+    return expr
+
+
+def conform_df(df, contract: dict):
+    fields = contract.get("fields", {})
+    for name, spec in fields.items():
+        if name in df.columns:
+            expr = col(name)
+        else:
+            expr = lit(None)
+        expr = apply_rules(expr, spec.get("rules"))
+        if spec.get("type"):
+            expr = expr.cast(spec.get("type"))
+        df = df.withColumn(name, expr)
+
+    df = ensure_columns(df, TARGET_FIELDS)
+    df = add_payload_hash(df)
+    return df
 
 # ------------------------------------------------------------------------------
 # Streaming from MinIO object events (Kafka)
@@ -362,8 +464,14 @@ def process_batch(batch_df, batch_id):
         .drop("_rn")
     )
 
-    merge_history_with_retry(combined)
-    merge_with_retry(combined)
+    try:
+        contract = load_contract(CONFORMED_CONTRACT_PATH)
+        conformed = conform_df(combined, contract)
+        merge_with_retry(conformed, CONFORMED_TABLE)
+        merge_history_with_retry(conformed, CONFORMED_TABLE)
+    except Exception as e:
+        # Conformed output is the only target now; surface errors clearly.
+        print(f"[ERROR] Conformance failed, no data written: {e}")
 
 
 # ------------------------------------------------------------------------------
