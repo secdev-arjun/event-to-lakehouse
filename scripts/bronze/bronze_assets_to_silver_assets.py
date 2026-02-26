@@ -33,6 +33,10 @@ spark = (
     SparkSession.builder
     .appName("Bronze Assets -> Iceberg Silver assets")
     .config("spark.executorEnv.PYTHONPATH", os.environ.get("PYTHONPATH", ""))
+    .config("spark.sql.shuffle.partitions", "4")
+    .config("spark.default.parallelism", "4")
+    .config("spark.sql.adaptive.enabled", "true")
+    .config("spark.sql.adaptive.coalescePartitions.enabled", "true")
     .getOrCreate()
 )
 
@@ -70,6 +74,9 @@ TRIGGER_INTERVAL = os.getenv("TRIGGER_INTERVAL", "30 seconds")
 MAX_FILES_PER_BATCH = int(os.getenv("MAX_FILES_PER_BATCH", "200"))
 READ_RETRY_COUNT = int(os.getenv("READ_RETRY_COUNT", "3"))
 READ_RETRY_SLEEP_SEC = float(os.getenv("READ_RETRY_SLEEP_SEC", "2"))
+COALESCE_PARTITIONS = int(os.getenv("COALESCE_PARTITIONS", "4"))
+CONTRACT_CACHE_TTL_SEC = int(os.getenv("CONTRACT_CACHE_TTL_SEC", "300"))
+SCHEMA_CACHE_TTL_SEC = int(os.getenv("SCHEMA_CACHE_TTL_SEC", "300"))
 
 EVENTS_CKPT = os.getenv(
     "EVENTS_CKPT",
@@ -97,6 +104,12 @@ HISTORY_EXTRA_FIELDS = [
     StructField("change_ts", TimestampType(), True),
 ]
 HISTORY_FIELDS = TARGET_FIELDS + HISTORY_EXTRA_FIELDS
+
+# ------------------------------------------------------------------------------
+# Simple in-memory caches (with TTL) to avoid re-reading on every micro-batch
+# ------------------------------------------------------------------------------
+_contract_cache = {"path": None, "loaded_at": 0.0, "contract": None}
+_schema_cache = {}  # topic_name -> (loaded_at, schema)
 # ------------------------------------------------------------------------------
 # Table helpers
 # ------------------------------------------------------------------------------
@@ -152,12 +165,15 @@ def merge_history_with_retry(
     incoming_df,
     current_table: str,
     retries: int = 3,
-    sleep_sec: float = 2.0
+    sleep_sec: float = 2.0,
+    materialized: bool = False
 ):
-    incoming_df = incoming_df.persist()
+    if not materialized:
+        incoming_df = incoming_df.persist()
     try:
-        if not incoming_df.take(1):
-            return
+        if not materialized:
+            if not incoming_df.take(1):
+                return
 
         current_df = None
         if spark.catalog.tableExists(current_table):
@@ -244,20 +260,30 @@ def merge_history_with_retry(
                         continue
                     raise last_err
     finally:
-        incoming_df.unpersist()
+        if not materialized:
+            incoming_df.unpersist()
 
 
-def merge_with_retry(df, table_name: str, retries: int = 3, sleep_sec: float = 2.0):
+def merge_with_retry(
+    df,
+    table_name: str,
+    retries: int = 3,
+    sleep_sec: float = 2.0,
+    materialized: bool = False
+):
     # Materialize the source to avoid non-deterministic expressions in MERGE.
-    df = df.persist()
+    if not materialized:
+        df = df.persist()
     try:
-        if not df.take(1):
-            return
+        if not materialized:
+            if not df.take(1):
+                return
 
         ensure_table(df, table_name)
 
         # Freeze the dataset so MERGE sees deterministic input.
-        df.count()
+        if not materialized:
+            df.count()
         df.createOrReplaceTempView("incoming_updates")
 
         all_cols = [f.name for f in TARGET_FIELDS]
@@ -296,7 +322,8 @@ def merge_with_retry(df, table_name: str, retries: int = 3, sleep_sec: float = 2
                     continue
                 raise last_err
     finally:
-        df.unpersist()
+        if not materialized:
+            df.unpersist()
 
 
 # ------------------------------------------------------------------------------
@@ -321,6 +348,34 @@ def load_contract(path: str) -> dict:
             return yaml.safe_load(raw)
         except Exception as e:
             raise RuntimeError(f"Failed to parse contract at {path}: {e}")
+
+
+def load_contract_cached(path: str) -> dict:
+    now = time.time()
+    if (
+        _contract_cache["contract"] is not None
+        and _contract_cache["path"] == path
+        and (now - _contract_cache["loaded_at"]) < CONTRACT_CACHE_TTL_SEC
+    ):
+        return _contract_cache["contract"]
+
+    contract = load_contract(path)
+    _contract_cache["path"] = path
+    _contract_cache["loaded_at"] = now
+    _contract_cache["contract"] = contract
+    return contract
+
+
+def load_latest_schema_cached(spark, schema_root: str, topic_name: str):
+    now = time.time()
+    cached = _schema_cache.get(topic_name)
+    if cached and (now - cached[0]) < SCHEMA_CACHE_TTL_SEC:
+        return cached[1]
+
+    schema = load_latest_schema(spark, schema_root, topic_name)
+    if schema is not None:
+        _schema_cache[topic_name] = (now, schema)
+    return schema
 
 
 def apply_rules(col_expr, rules):
@@ -429,7 +484,7 @@ def process_batch(batch_df, batch_id):
         )
         if not existing:
             return
-        schema = load_latest_schema(spark, SCHEMA_ROOT, topic_name)
+        schema = load_latest_schema_cached(spark, SCHEMA_ROOT, topic_name)
         if schema is None:
             raise RuntimeError(f"No inferred schema found for {topic_name}")
 
@@ -465,10 +520,17 @@ def process_batch(batch_df, batch_id):
     )
 
     try:
-        contract = load_contract(CONFORMED_CONTRACT_PATH)
-        conformed = conform_df(combined, contract)
-        merge_with_retry(conformed, CONFORMED_TABLE)
-        merge_history_with_retry(conformed, CONFORMED_TABLE)
+        contract = load_contract_cached(CONFORMED_CONTRACT_PATH)
+        conformed = conform_df(combined, contract).coalesce(COALESCE_PARTITIONS)
+        conformed = conformed.persist()
+        try:
+            row_count = conformed.count()
+            if row_count == 0:
+                return
+            merge_history_with_retry(conformed, CONFORMED_TABLE, materialized=True)
+            merge_with_retry(conformed, CONFORMED_TABLE, materialized=True)
+        finally:
+            conformed.unpersist()
     except Exception as e:
         # Conformed output is the only target now; surface errors clearly.
         print(f"[ERROR] Conformance failed, no data written: {e}")
