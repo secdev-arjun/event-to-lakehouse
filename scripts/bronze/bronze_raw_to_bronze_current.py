@@ -40,9 +40,9 @@ spark.conf.set("spark.sql.files.ignoreCorruptFiles", "true")
 # Config
 # ------------------------------------------------------------------------------
 
-RAPID7_BRONZE_TABLE = os.getenv("RAPID7_BRONZE_TABLE", "iceberg.bronze.rapid7_bronze")
-FORTI_BRONZE_TABLE = os.getenv("FORTI_BRONZE_TABLE", "iceberg.bronze.fortisiem_bronze")
-SENTINEL_BRONZE_TABLE = os.getenv("SENTINEL_BRONZE_TABLE", "iceberg.bronze.sentinelone_bronze")
+RAPID7_BRONZE_TABLE = os.getenv("RAPID7_BRONZE_TABLE", "iceberg.bronze.rapid7__assets")
+FORTI_BRONZE_TABLE = os.getenv("FORTI_BRONZE_TABLE", "iceberg.bronze.fortisiem__device")
+SENTINEL_BRONZE_TABLE = os.getenv("SENTINEL_BRONZE_TABLE", "iceberg.bronze.sentinelone__agents")
 
 RAPID7_CURRENT_TABLE = os.getenv(
     "RAPID7_CURRENT_TABLE",
@@ -76,10 +76,7 @@ CHECKPOINT_FIELDS = [
 
 def _ensure_table_from_raw(raw_df, table_name: str):
     if not spark.catalog.tableExists(table_name):
-        cols_sql = ", ".join(
-            [f"`{f.name}` {f.dataType.simpleString()}" for f in raw_df.schema.fields]
-        )
-        spark.sql(f"CREATE TABLE {table_name} ({cols_sql}) USING iceberg")
+        raw_df.limit(0).writeTo(table_name).create()
         return
 
     existing_fields = {f.name: f.dataType for f in spark.table(table_name).schema.fields}
