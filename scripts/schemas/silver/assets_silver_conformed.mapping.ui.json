@@ -1,0 +1,756 @@
+{
+  "notes": {
+    "description": "Mappings extracted from normalize_* functions. common_fields are applied via add_common_fields/add_payload_hash."
+  },
+  "source_table": "iceberg.silver.assets",
+  "sources": [
+    "rapid7",
+    "fortisiem",
+    "sentinelone"
+  ],
+  "target_table": "iceberg.silver.assets_conformed",
+  "targets": [
+    {
+      "derived": "lit(SCHEMA_VERSION)",
+      "name": "schema_version",
+      "nullable": true,
+      "rules": [],
+      "sources": {},
+      "type": "string"
+    },
+    {
+      "derived": "concat_ws('|', topic_name, vendor_id)",
+      "name": "entity_key_str",
+      "nullable": true,
+      "rules": [],
+      "sources": {},
+      "type": "string"
+    },
+    {
+      "derived": "sha2(entity_key_str, 256)",
+      "name": "entity_key_hash",
+      "nullable": true,
+      "rules": [],
+      "sources": {},
+      "type": "string"
+    },
+    {
+      "derived": "sha2(to_json(struct(asset_uid, source_system, rapid7_id, fortisiem_id, asset_name, primary_hostname, primary_ip, access_ip, natural_id, approved, unmanaged, device_vendor, device_model, device_version, os_name, os_family, os_vendor, os_product, os_version, os_architecture, os_certainty, assessed_for_policies, assessed_for_vulnerabilities, risk_score, raw_risk_score, vuln_total, vuln_critical, vuln_severe, vuln_moderate, vuln_exploits, vuln_malware_kits, host_domain, ip_addresses, external_ip, cpu_count, memory_bytes, posture_is_active, posture_firewall_enabled, posture_network_quarantine_enabled, posture_active_threats, tags)), 256)",
+      "name": "payload_hash",
+      "nullable": true,
+      "rules": [],
+      "sources": {},
+      "type": "string"
+    },
+    {
+      "derived": "lit(topic_name)",
+      "name": "topic_name",
+      "nullable": true,
+      "rules": [],
+      "sources": {},
+      "type": "string"
+    },
+    {
+      "derived": "vendor_id_col.cast('string')",
+      "name": "vendor_id",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "sentinelone": "F.coalesce(col(\"uuid\"), col(\"id\")).cast(\"string\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "ingest_ts",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "col(\"ingest_ts\")",
+        "rapid7": "col(\"ingest_ts\")",
+        "sentinelone": "col(\"ingest_ts\")"
+      },
+      "type": "timestamp"
+    },
+    {
+      "derived": "lit(None).cast('timestamp')",
+      "name": "first_seen_at",
+      "nullable": true,
+      "rules": [],
+      "sources": {},
+      "type": "timestamp"
+    },
+    {
+      "derived": "lit(None).cast('timestamp')",
+      "name": "last_seen_at",
+      "nullable": true,
+      "rules": [],
+      "sources": {},
+      "type": "timestamp"
+    },
+    {
+      "derived": "source_updated_at_col",
+      "name": "source_updated_at",
+      "nullable": true,
+      "rules": [],
+      "sources": {},
+      "type": "timestamp"
+    },
+    {
+      "derived": null,
+      "name": "event_time",
+      "nullable": true,
+      "rules": [],
+      "sources": {},
+      "type": "timestamp"
+    },
+    {
+      "derived": null,
+      "name": "asset_uid",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "sha2(\n                concat_ws(\n                    \"|\",\n                    lower(trim(col(\"primary_hostname\"))),\n                    lower(trim(col(\"access_ip\"))),\n                    col(\"fortisiem_id\")\n                ),\n                256\n            )",
+        "rapid7": "sha2(\n                concat_ws(\n                    \"|\",\n                    lower(trim(col(\"primary_hostname\"))),\n                    lower(trim(col(\"primary_ip\"))),\n                    col(\"rapid7_id\")\n                ),\n                256\n            )",
+        "sentinelone": "sha2(\n                concat_ws(\n                    \"|\",\n                    lower(trim(col(\"primary_hostname\"))),\n                    lower(trim(col(\"primary_ip\"))),\n                    col(\"vendor_id\")\n                ),\n                256\n            )"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "source_system",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        },
+        {
+          "op": "lower"
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(\"fortisiem\")",
+        "rapid7": "lit(\"rapid7\")",
+        "sentinelone": "lit(\"sentinelone\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "rapid7_id",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"string\")",
+        "rapid7": "col(\"id\").cast(\"string\")",
+        "sentinelone": "lit(None).cast(\"string\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "fortisiem_id",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "forti_id_expr",
+        "rapid7": "lit(None).cast(\"string\")",
+        "sentinelone": "lit(None).cast(\"string\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "asset_name",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "col(\"name\")",
+        "rapid7": "col(\"hostName\")",
+        "sentinelone": "col(\"computerName\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "primary_hostname",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "col(\"name\")",
+        "rapid7": "col(\"hostName\")",
+        "sentinelone": "col(\"computerName\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "primary_ip",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"string\")",
+        "rapid7": "col(\"ip\")",
+        "sentinelone": "col(\"lastIpToMgmt\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "access_ip",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "col(\"accessIp\")",
+        "rapid7": "lit(None).cast(\"string\")",
+        "sentinelone": "col(\"lastIpToMgmt\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "natural_id",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "col(\"naturalId\")",
+        "rapid7": "lit(None).cast(\"string\")",
+        "sentinelone": "lit(None).cast(\"string\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "approved",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "col(\"approved\")",
+        "rapid7": "lit(None).cast(\"boolean\")",
+        "sentinelone": "lit(None).cast(\"boolean\")"
+      },
+      "type": "boolean"
+    },
+    {
+      "derived": null,
+      "name": "unmanaged",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "col(\"unmanaged\")",
+        "rapid7": "lit(None).cast(\"boolean\")",
+        "sentinelone": "lit(None).cast(\"boolean\")"
+      },
+      "type": "boolean"
+    },
+    {
+      "derived": null,
+      "name": "device_vendor",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "col(\"deviceType.vendor\")",
+        "rapid7": "lit(None).cast(\"string\")",
+        "sentinelone": "lit(None).cast(\"string\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "device_model",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "col(\"deviceType.model\")",
+        "rapid7": "lit(None).cast(\"string\")",
+        "sentinelone": "lit(None).cast(\"string\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "device_version",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "col(\"deviceType.version\")",
+        "rapid7": "lit(None).cast(\"string\")",
+        "sentinelone": "lit(None).cast(\"string\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "os_name",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"string\")",
+        "rapid7": "col(\"os\")",
+        "sentinelone": "col(\"osName\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "os_family",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        },
+        {
+          "op": "lower"
+        },
+        {
+          "default": null,
+          "op": "map",
+          "values": {
+            "darwin": "MacOS",
+            "linux": "Linux",
+            "mac": "MacOS",
+            "macos": "MacOS",
+            "win": "Windows",
+            "windows": "Windows"
+          }
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"string\")",
+        "rapid7": "col(\"osFingerprint.family\")",
+        "sentinelone": "col(\"osType\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "os_vendor",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"string\")",
+        "rapid7": "col(\"osFingerprint.vendor\")",
+        "sentinelone": "lit(None).cast(\"string\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "os_product",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"string\")",
+        "rapid7": "col(\"osFingerprint.product\")",
+        "sentinelone": "lit(None).cast(\"string\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "os_version",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"string\")",
+        "rapid7": "F.coalesce(col(\"osFingerprint.cpe.version\"), col(\"osFingerprint.version\"))",
+        "sentinelone": "col(\"osRevision\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "os_architecture",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        },
+        {
+          "op": "lower"
+        },
+        {
+          "op": "regex_replace",
+          "pattern": "\\s+",
+          "replacement": ""
+        },
+        {
+          "default": null,
+          "op": "map",
+          "values": {
+            "64bit": "x86_64",
+            "aarch64": "arm64",
+            "amd64": "x86_64",
+            "arm64": "arm64",
+            "x64": "x86_64",
+            "x86_64": "x86_64"
+          }
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"string\")",
+        "rapid7": "col(\"osFingerprint.architecture\")",
+        "sentinelone": "col(\"osArch\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "os_certainty",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"double\")",
+        "rapid7": "col(\"osCertainty\").cast(\"double\")",
+        "sentinelone": "lit(None).cast(\"double\")"
+      },
+      "type": "double"
+    },
+    {
+      "derived": null,
+      "name": "assessed_for_policies",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"boolean\")",
+        "rapid7": "col(\"assessedForPolicies\")",
+        "sentinelone": "lit(None).cast(\"boolean\")"
+      },
+      "type": "boolean"
+    },
+    {
+      "derived": null,
+      "name": "assessed_for_vulnerabilities",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"boolean\")",
+        "rapid7": "col(\"assessedForVulnerabilities\")",
+        "sentinelone": "lit(None).cast(\"boolean\")"
+      },
+      "type": "boolean"
+    },
+    {
+      "derived": null,
+      "name": "risk_score",
+      "nullable": true,
+      "rules": [
+        {
+          "factor": 0.1,
+          "op": "scale_if_gt",
+          "value": 10
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"double\")",
+        "rapid7": "col(\"riskScore\").cast(\"double\")",
+        "sentinelone": "lit(None).cast(\"double\")"
+      },
+      "type": "double"
+    },
+    {
+      "derived": null,
+      "name": "raw_risk_score",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"double\")",
+        "rapid7": "col(\"rawRiskScore\").cast(\"double\")",
+        "sentinelone": "lit(None).cast(\"double\")"
+      },
+      "type": "double"
+    },
+    {
+      "derived": null,
+      "name": "vuln_total",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"int\")",
+        "rapid7": "col(\"vulnerabilities.total\").cast(\"int\")",
+        "sentinelone": "lit(None).cast(\"int\")"
+      },
+      "type": "int"
+    },
+    {
+      "derived": null,
+      "name": "vuln_critical",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"int\")",
+        "rapid7": "col(\"vulnerabilities.critical\").cast(\"int\")",
+        "sentinelone": "lit(None).cast(\"int\")"
+      },
+      "type": "int"
+    },
+    {
+      "derived": null,
+      "name": "vuln_severe",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"int\")",
+        "rapid7": "col(\"vulnerabilities.severe\").cast(\"int\")",
+        "sentinelone": "lit(None).cast(\"int\")"
+      },
+      "type": "int"
+    },
+    {
+      "derived": null,
+      "name": "vuln_moderate",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"int\")",
+        "rapid7": "col(\"vulnerabilities.moderate\").cast(\"int\")",
+        "sentinelone": "lit(None).cast(\"int\")"
+      },
+      "type": "int"
+    },
+    {
+      "derived": null,
+      "name": "vuln_exploits",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"int\")",
+        "rapid7": "col(\"vulnerabilities.exploits\").cast(\"int\")",
+        "sentinelone": "lit(None).cast(\"int\")"
+      },
+      "type": "int"
+    },
+    {
+      "derived": null,
+      "name": "vuln_malware_kits",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"int\")",
+        "rapid7": "col(\"vulnerabilities.malwareKits\").cast(\"int\")",
+        "sentinelone": "lit(None).cast(\"int\")"
+      },
+      "type": "int"
+    },
+    {
+      "derived": null,
+      "name": "host_domain",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"string\")",
+        "rapid7": "lit(None).cast(\"string\")",
+        "sentinelone": "col(\"domain\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "ip_addresses",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(ArrayType(StringType()))",
+        "rapid7": "lit(None).cast(ArrayType(StringType()))",
+        "sentinelone": "_array_sort_nullable(ip_array)"
+      },
+      "type": "array<string>"
+    },
+    {
+      "derived": null,
+      "name": "external_ip",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"string\")",
+        "rapid7": "lit(None).cast(\"string\")",
+        "sentinelone": "col(\"externalIp\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "cpu_count",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"int\")",
+        "rapid7": "lit(None).cast(\"int\")",
+        "sentinelone": "col(\"cpuCount\").cast(\"int\")"
+      },
+      "type": "int"
+    },
+    {
+      "derived": null,
+      "name": "memory_bytes",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"long\")",
+        "rapid7": "lit(None).cast(\"long\")",
+        "sentinelone": "(col(\"totalMemory\") * lit(1024 * 1024)).cast(\"long\")"
+      },
+      "type": "bigint"
+    },
+    {
+      "derived": null,
+      "name": "posture_is_active",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"boolean\")",
+        "rapid7": "lit(None).cast(\"boolean\")",
+        "sentinelone": "col(\"isActive\")"
+      },
+      "type": "boolean"
+    },
+    {
+      "derived": null,
+      "name": "posture_firewall_enabled",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"boolean\")",
+        "rapid7": "lit(None).cast(\"boolean\")",
+        "sentinelone": "col(\"firewallEnabled\")"
+      },
+      "type": "boolean"
+    },
+    {
+      "derived": null,
+      "name": "posture_network_quarantine_enabled",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"boolean\")",
+        "rapid7": "lit(None).cast(\"boolean\")",
+        "sentinelone": "col(\"networkQuarantineEnabled\")"
+      },
+      "type": "boolean"
+    },
+    {
+      "derived": null,
+      "name": "posture_active_threats",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "lit(None).cast(\"int\")",
+        "rapid7": "lit(None).cast(\"int\")",
+        "sentinelone": "col(\"activeThreats\").cast(\"int\")"
+      },
+      "type": "int"
+    },
+    {
+      "derived": null,
+      "name": "tags",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ],
+      "sources": {
+        "fortisiem": "lit(None).cast(ArrayType(StringType()))",
+        "rapid7": "lit(None).cast(ArrayType(StringType()))",
+        "sentinelone": "_array_sort_nullable(col(\"tags.sentinelone\"))"
+      },
+      "type": "array<string>"
+    },
+    {
+      "derived": null,
+      "name": "raw_payload",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "col(\"raw_json\")",
+        "rapid7": "col(\"raw_json\")",
+        "sentinelone": "col(\"raw_json\")"
+      },
+      "type": "string"
+    },
+    {
+      "derived": null,
+      "name": "raw_json",
+      "nullable": true,
+      "rules": [],
+      "sources": {
+        "fortisiem": "to_json(struct([col(c) for c in forti_clean.columns if c != \"_corrupt_record\"]))",
+        "rapid7": "to_json(struct([col(c) for c in rapid7_clean.columns if c != \"_corrupt_record\"]))",
+        "sentinelone": "to_json(struct([col(c) for c in clean.columns if c != \"_corrupt_record\"]))"
+      },
+      "type": "string"
+    }
+  ]
+}

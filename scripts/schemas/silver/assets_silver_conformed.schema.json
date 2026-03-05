@@ -1,0 +1,348 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "properties": {
+    "access_ip": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "approved": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "assessed_for_policies": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "assessed_for_vulnerabilities": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "asset_name": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "asset_uid": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "cpu_count": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "device_model": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "device_vendor": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "device_version": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "entity_key_hash": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "entity_key_str": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "event_time": {
+      "format": "date-time",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "external_ip": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "first_seen_at": {
+      "format": "date-time",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "fortisiem_id": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "host_domain": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "ingest_ts": {
+      "format": "date-time",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "ip_addresses": {
+      "items": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "last_seen_at": {
+      "format": "date-time",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "memory_bytes": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "natural_id": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "os_architecture": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "os_certainty": {
+      "type": [
+        "null",
+        "number"
+      ]
+    },
+    "os_family": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "os_name": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "os_product": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "os_vendor": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "os_version": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "payload_hash": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "posture_active_threats": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "posture_firewall_enabled": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "posture_is_active": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "posture_network_quarantine_enabled": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "primary_hostname": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "primary_ip": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "rapid7_id": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "raw_json": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "raw_payload": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "raw_risk_score": {
+      "type": [
+        "null",
+        "number"
+      ]
+    },
+    "risk_score": {
+      "type": [
+        "null",
+        "number"
+      ]
+    },
+    "schema_version": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "source_system": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "source_updated_at": {
+      "format": "date-time",
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "tags": {
+      "items": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "type": [
+        "null",
+        "array"
+      ]
+    },
+    "topic_name": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "unmanaged": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "vendor_id": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "vuln_critical": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "vuln_exploits": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "vuln_malware_kits": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "vuln_moderate": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "vuln_severe": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    },
+    "vuln_total": {
+      "type": [
+        "null",
+        "integer"
+      ]
+    }
+  },
+  "title": "assets_silver_conformed",
+  "type": "object"
+}

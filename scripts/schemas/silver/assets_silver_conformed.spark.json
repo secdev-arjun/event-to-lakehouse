@@ -1,0 +1,337 @@
+{
+  "fields": [
+    {
+      "metadata": {},
+      "name": "schema_version",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "entity_key_str",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "entity_key_hash",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "payload_hash",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "topic_name",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "vendor_id",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "ingest_ts",
+      "nullable": true,
+      "type": "timestamp"
+    },
+    {
+      "metadata": {},
+      "name": "first_seen_at",
+      "nullable": true,
+      "type": "timestamp"
+    },
+    {
+      "metadata": {},
+      "name": "last_seen_at",
+      "nullable": true,
+      "type": "timestamp"
+    },
+    {
+      "metadata": {},
+      "name": "source_updated_at",
+      "nullable": true,
+      "type": "timestamp"
+    },
+    {
+      "metadata": {},
+      "name": "event_time",
+      "nullable": true,
+      "type": "timestamp"
+    },
+    {
+      "metadata": {},
+      "name": "asset_uid",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "source_system",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "rapid7_id",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "fortisiem_id",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "asset_name",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "primary_hostname",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "primary_ip",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "access_ip",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "natural_id",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "approved",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "unmanaged",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "device_vendor",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "device_model",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "device_version",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "os_name",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "os_family",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "os_vendor",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "os_product",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "os_version",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "os_architecture",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "os_certainty",
+      "nullable": true,
+      "type": "double"
+    },
+    {
+      "metadata": {},
+      "name": "assessed_for_policies",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "assessed_for_vulnerabilities",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "risk_score",
+      "nullable": true,
+      "type": "double"
+    },
+    {
+      "metadata": {},
+      "name": "raw_risk_score",
+      "nullable": true,
+      "type": "double"
+    },
+    {
+      "metadata": {},
+      "name": "vuln_total",
+      "nullable": true,
+      "type": "integer"
+    },
+    {
+      "metadata": {},
+      "name": "vuln_critical",
+      "nullable": true,
+      "type": "integer"
+    },
+    {
+      "metadata": {},
+      "name": "vuln_severe",
+      "nullable": true,
+      "type": "integer"
+    },
+    {
+      "metadata": {},
+      "name": "vuln_moderate",
+      "nullable": true,
+      "type": "integer"
+    },
+    {
+      "metadata": {},
+      "name": "vuln_exploits",
+      "nullable": true,
+      "type": "integer"
+    },
+    {
+      "metadata": {},
+      "name": "vuln_malware_kits",
+      "nullable": true,
+      "type": "integer"
+    },
+    {
+      "metadata": {},
+      "name": "host_domain",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "ip_addresses",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": "string",
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "external_ip",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "cpu_count",
+      "nullable": true,
+      "type": "integer"
+    },
+    {
+      "metadata": {},
+      "name": "memory_bytes",
+      "nullable": true,
+      "type": "long"
+    },
+    {
+      "metadata": {},
+      "name": "posture_is_active",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "posture_firewall_enabled",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "posture_network_quarantine_enabled",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "posture_active_threats",
+      "nullable": true,
+      "type": "integer"
+    },
+    {
+      "metadata": {},
+      "name": "tags",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": "string",
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "raw_payload",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "raw_json",
+      "nullable": true,
+      "type": "string"
+    }
+  ],
+  "type": "struct"
+}
