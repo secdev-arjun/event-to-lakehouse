@@ -46,22 +46,23 @@ SENTINEL_BRONZE_TABLE = os.getenv("SENTINEL_BRONZE_TABLE", "iceberg.bronze.senti
 
 RAPID7_CURRENT_TABLE = os.getenv(
     "RAPID7_CURRENT_TABLE",
-    "iceberg.bronze.rapid7__assets__current"
+    "iceberg.bronze_current.rapid7__assets__current"
 )
 FORTI_CURRENT_TABLE = os.getenv(
     "FORTI_CURRENT_TABLE",
-    "iceberg.bronze.fortisiem__device__current"
+    "iceberg.bronze_current.fortisiem__device__current"
 )
 SENTINEL_CURRENT_TABLE = os.getenv(
     "SENTINEL_CURRENT_TABLE",
-    "iceberg.bronze.sentinalone__agents__current"
+    "iceberg.bronze_current.sentinalone__agents__current"
 )
 
 CHECKPOINT_TABLE = os.getenv(
     "BRONZE_CURRENT_CHECKPOINT_TABLE",
-    "iceberg.bronze.bronze_current_checkpoint"
+    "iceberg.bronze_current.bronze_current_checkpoint"
 )
 CHECKPOINT_LOOKBACK_MINUTES = int(os.getenv("CHECKPOINT_LOOKBACK_MINUTES", "5"))
+USE_INGEST_TS = os.getenv("USE_INGEST_TS", "true").lower() == "true"
 
 # ------------------------------------------------------------------------------
 # Helpers
@@ -139,12 +140,39 @@ def _latest_per_entity(df, key_col):
 
 def _parse_ingest_ts(col_name: str):
     raw = F.col(col_name)
-    return F.coalesce(
-        raw.cast("timestamp"),
-        F.to_timestamp(raw, "yyyy-MM-dd'T'HH:mm:ss.SSSX"),
-        F.to_timestamp(raw, "yyyy-MM-dd'T'HH:mm:ssX"),
-        F.to_timestamp(raw)
+    raw_str = raw.cast("string")
+    raw_long = raw.cast("long")
+
+    # Heuristic: treat large numeric values as epoch (ms/us/ns) and scale to seconds.
+    epoch_seconds = (
+        F.when(raw_long.isNull(), F.lit(None).cast("double"))
+        .when(raw_long >= F.lit(10**18), raw_long / F.lit(1e9))   # nanos -> seconds
+        .when(raw_long >= F.lit(10**15), raw_long / F.lit(1e6))   # micros -> seconds
+        .when(raw_long >= F.lit(10**12), raw_long / F.lit(1e3))   # millis -> seconds
+        .when(raw_long >= F.lit(10**9), raw_long.cast("double"))  # seconds
+        .otherwise(F.lit(None).cast("double"))
     )
+    epoch_ts = F.to_timestamp(F.from_unixtime(epoch_seconds))
+
+    normalized = F.regexp_replace(raw_str, "T", " ")
+    normalized = F.regexp_replace(normalized, "Z$", "")
+
+    return F.coalesce(
+        epoch_ts,
+        F.to_timestamp(raw_str),
+        F.to_timestamp(normalized)
+    )
+
+
+def _with_ingest_ts(df):
+    if USE_INGEST_TS and "ingest_ts" in df.columns:
+        return df.withColumn("_ingest_ts", _parse_ingest_ts("ingest_ts"))
+
+    for col_name in ("event_time", "source_updated_at", "updated_at", "timestamp"):
+        if col_name in df.columns:
+            return df.withColumn("_ingest_ts", F.to_timestamp(F.col(col_name).cast("string")))
+
+    return df.withColumn("_ingest_ts", F.current_timestamp())
 
 
 def _merge_current_raw(incoming_df, current_table: str, key_col):
@@ -155,7 +183,7 @@ def _merge_current_raw(incoming_df, current_table: str, key_col):
 
     if spark.catalog.tableExists(current_table):
         current_df = spark.table(current_table)
-        current_df = current_df.withColumn("_ingest_ts", _parse_ingest_ts("ingest_ts"))
+        current_df = _with_ingest_ts(current_df)
         current_df = current_df.withColumn("_entity_key", key_col(current_df))
         combined = current_df.unionByName(
             incoming_df.withColumn("_entity_key", key_col(incoming_df)),
@@ -164,7 +192,7 @@ def _merge_current_raw(incoming_df, current_table: str, key_col):
     else:
         combined = incoming_df.withColumn("_entity_key", key_col(incoming_df))
 
-    combined = combined.withColumn("_ingest_ts", _parse_ingest_ts("ingest_ts"))
+    combined = _with_ingest_ts(combined)
     combined = combined.filter(F.col("_entity_key").isNotNull())
     latest = _latest_per_entity(combined, "_entity_key")
     latest = latest.drop("_entity_key", "_ingest_ts")
@@ -178,12 +206,13 @@ def _process_source(source_system, raw_table, current_table, key_col_fn):
         return
 
     raw_df = spark.table(raw_table)
-    raw_df = raw_df.withColumn("_ingest_ts", _parse_ingest_ts("ingest_ts"))
+    raw_df = _with_ingest_ts(raw_df)
 
-    last_ts = _get_checkpoint(source_system)
-    if last_ts is not None:
-        start_ts = last_ts - timedelta(minutes=CHECKPOINT_LOOKBACK_MINUTES)
-        raw_df = raw_df.filter(F.col("_ingest_ts") > F.lit(start_ts))
+    if USE_INGEST_TS:
+        last_ts = _get_checkpoint(source_system)
+        if last_ts is not None:
+            start_ts = last_ts - timedelta(minutes=CHECKPOINT_LOOKBACK_MINUTES)
+            raw_df = raw_df.filter(F.col("_ingest_ts") > F.lit(start_ts))
 
     # Drop rows without a stable entity key
     raw_df = raw_df.withColumn("_entity_key", key_col_fn(raw_df))
@@ -196,8 +225,9 @@ def _process_source(source_system, raw_table, current_table, key_col_fn):
     incoming_df = raw_df.filter(F.col("_ingest_ts").isNotNull()).drop("_ingest_ts")
     _merge_current_raw(incoming_df, current_table, key_col_fn)
 
-    max_ts = raw_df.agg(F.max("_ingest_ts")).collect()[0][0]
-    _update_checkpoint(source_system, max_ts)
+    if USE_INGEST_TS:
+        max_ts = raw_df.agg(F.max("_ingest_ts")).collect()[0][0]
+        _update_checkpoint(source_system, max_ts)
 
 
 def main():
