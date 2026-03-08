@@ -40,21 +40,21 @@ spark.conf.set("spark.sql.files.ignoreCorruptFiles", "true")
 # Config
 # ------------------------------------------------------------------------------
 
-RAPID7_BRONZE_TABLE = os.getenv("RAPID7_BRONZE_TABLE", "iceberg.bronze.rapid7__assets")
-FORTI_BRONZE_TABLE = os.getenv("FORTI_BRONZE_TABLE", "iceberg.bronze.fortisiem__device")
-SENTINEL_BRONZE_TABLE = os.getenv("SENTINEL_BRONZE_TABLE", "iceberg.bronze.sentinelone__agents")
+RAPID7_BRONZE_TABLE = os.getenv("RAPID7_BRONZE_TABLE", "iceberg.bronze.rapid7__assets__raw")
+FORTI_BRONZE_TABLE = os.getenv("FORTI_BRONZE_TABLE", "iceberg.bronze.fortisiem__device__raw")
+SENTINEL_BRONZE_TABLE = os.getenv("SENTINEL_BRONZE_TABLE", "iceberg.bronze.sentinalone__agents__raw")
 
 RAPID7_CURRENT_TABLE = os.getenv(
     "RAPID7_CURRENT_TABLE",
-    "iceberg.bronze.rapid7_bronze_current"
+    "iceberg.bronze.rapid7__assets__current"
 )
 FORTI_CURRENT_TABLE = os.getenv(
     "FORTI_CURRENT_TABLE",
-    "iceberg.bronze.fortisiem_bronze_current"
+    "iceberg.bronze.fortisiem__device__current"
 )
 SENTINEL_CURRENT_TABLE = os.getenv(
     "SENTINEL_CURRENT_TABLE",
-    "iceberg.bronze.sentinelone_bronze_current"
+    "iceberg.bronze.sentinalone__agents__current"
 )
 
 CHECKPOINT_TABLE = os.getenv(
