@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-from datetime import datetime, timezone
 import json
 
 from pyspark.sql import SparkSession
@@ -19,11 +18,9 @@ if BASE_DIR not in sys.path:
 os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 
 from mapping.target import TARGET_FIELDS, ensure_columns, add_payload_hash
-from mapping.sources.rapid7 import RAPID7_TOPIC, normalize_rapid7
-from mapping.sources.fortisiem import FORTI_TOPIC, normalize_fortisiem
-from mapping.sources.sentinel import SENTINEL_TOPIC, normalize_sentinel
-from bronze.noramlizer.kafka_notifications import extract_decoded_events
-from bronze.noramlizer.minio_reader import filter_existing_paths, load_latest_schema, read_topic_files
+from mapping.sources.rapid7 import normalize_rapid7
+from mapping.sources.fortisiem import normalize_fortisiem
+from mapping.sources.sentinel import normalize_sentinel
 
 # ------------------------------------------------------------------------------
 # Spark session (your docker spark-submit provides Iceberg + s3a configs)
@@ -48,50 +45,55 @@ spark.conf.set("spark.sql.files.ignoreCorruptFiles", "true")
 # Config
 # ------------------------------------------------------------------------------
 
-CONFORMED_TABLE = os.getenv("CONFORMED_TABLE", "iceberg.silver.assets_conformed")
-HISTORY_TABLE = os.getenv("HISTORY_TABLE", "iceberg.silver.assets_history")
+# Input: bronze current tables
+RAPID7_BRONZE_CURRENT_TABLE = os.getenv(
+    "RAPID7_BRONZE_CURRENT_TABLE",
+    "iceberg.bronze_current.rapid7__assets__current"
+)
+FORTI_BRONZE_CURRENT_TABLE = os.getenv(
+    "FORTI_BRONZE_CURRENT_TABLE",
+    "iceberg.bronze_current.fortisiem__device__current"
+)
+SENTINEL_BRONZE_CURRENT_TABLE = os.getenv(
+    "SENTINEL_BRONZE_CURRENT_TABLE",
+    "iceberg.bronze_current.sentinalone__agents__current"
+)
+
+# Output: silver current + history per source
+RAPID7_SILVER_CURRENT_TABLE = os.getenv(
+    "RAPID7_SILVER_CURRENT_TABLE",
+    "iceberg.silver.rapid7__assets__silver__current"
+)
+RAPID7_SILVER_HISTORY_TABLE = os.getenv(
+    "RAPID7_SILVER_HISTORY_TABLE",
+    "iceberg.silver.rapid7__assets__silver__history"
+)
+
+FORTI_SILVER_CURRENT_TABLE = os.getenv(
+    "FORTI_SILVER_CURRENT_TABLE",
+    "iceberg.silver.fortisiem__device__silver__current"
+)
+FORTI_SILVER_HISTORY_TABLE = os.getenv(
+    "FORTI_SILVER_HISTORY_TABLE",
+    "iceberg.silver.fortisiem__device__silver__history"
+)
+
+SENTINEL_SILVER_CURRENT_TABLE = os.getenv(
+    "SENTINEL_SILVER_CURRENT_TABLE",
+    "iceberg.silver.sentinalone__agents__silver__current"
+)
+SENTINEL_SILVER_HISTORY_TABLE = os.getenv(
+    "SENTINEL_SILVER_HISTORY_TABLE",
+    "iceberg.silver.sentinalone__agents__silver__history"
+)
 
 CONFORMED_CONTRACT_PATH = os.getenv(
     "CONFORMED_CONTRACT_PATH",
     "/opt/spark/scripts/bronze/contracts/assets_silver_contract.yaml"
 )
 
-
-def _with_trailing_slash(path: str) -> str:
-    return path if path.endswith("/") else path + "/"
-
-
-SCHEMA_ROOT = _with_trailing_slash(os.getenv("SCHEMA_ROOT", "s3a://warehouse/schemas/"))
-
-KAFKA_BOOTSTRAP = os.getenv(
-    "KAFKA_BOOTSTRAP_SERVERS",
-    "broker-1:19092,broker-2:19092,broker-3:19092"
-)
-KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "minio.object.events")
-STARTING_OFFSETS = os.getenv("STARTING_OFFSETS", "latest")
-MAX_OFFSETS_PER_TRIGGER = int(os.getenv("MAX_OFFSETS_PER_TRIGGER", "200"))
-TRIGGER_INTERVAL = os.getenv("TRIGGER_INTERVAL", "30 seconds")
-MAX_FILES_PER_BATCH = int(os.getenv("MAX_FILES_PER_BATCH", "200"))
-READ_RETRY_COUNT = int(os.getenv("READ_RETRY_COUNT", "3"))
-READ_RETRY_SLEEP_SEC = float(os.getenv("READ_RETRY_SLEEP_SEC", "2"))
 COALESCE_PARTITIONS = int(os.getenv("COALESCE_PARTITIONS", "4"))
 CONTRACT_CACHE_TTL_SEC = int(os.getenv("CONTRACT_CACHE_TTL_SEC", "300"))
-SCHEMA_CACHE_TTL_SEC = int(os.getenv("SCHEMA_CACHE_TTL_SEC", "300"))
-
-EVENTS_CKPT = os.getenv(
-    "EVENTS_CKPT",
-    "s3a://warehouse/checkpoints/silver_assets_events/"
-)
-
-# JSON reader hardening:
-# - multiLine: true for pretty/indented JSON objects
-# - mode: PERMISSIVE keeps going on malformed records
-# - columnNameOfCorruptRecord: capture bad JSON into a column (requires schema to include it)
-JSON_OPTIONS = {
-    "multiLine": "true",
-    "mode": "PERMISSIVE",
-    "columnNameOfCorruptRecord": "_corrupt_record"
-}
 
 # ------------------------------------------------------------------------------
 # History fields
@@ -109,7 +111,6 @@ HISTORY_FIELDS = TARGET_FIELDS + HISTORY_EXTRA_FIELDS
 # Simple in-memory caches (with TTL) to avoid re-reading on every micro-batch
 # ------------------------------------------------------------------------------
 _contract_cache = {"path": None, "loaded_at": 0.0, "contract": None}
-_schema_cache = {}  # topic_name -> (loaded_at, schema)
 # ------------------------------------------------------------------------------
 # Table helpers
 # ------------------------------------------------------------------------------
@@ -125,16 +126,16 @@ def ensure_table(df, table_name: str):
         cols_sql = ", ".join([f"{f.name} {f.dataType.simpleString()}" for f in missing])
         spark.sql(f"ALTER TABLE {table_name} ADD COLUMNS ({cols_sql})")
 
-def ensure_history_table(df):
-    if not spark.catalog.tableExists(HISTORY_TABLE):
-        df.limit(0).writeTo(HISTORY_TABLE).create()
+def ensure_history_table(df, table_name: str):
+    if not spark.catalog.tableExists(table_name):
+        df.limit(0).writeTo(table_name).create()
         return
 
-    existing_fields = {f.name: f.dataType for f in spark.table(HISTORY_TABLE).schema.fields}
+    existing_fields = {f.name: f.dataType for f in spark.table(table_name).schema.fields}
     missing = [f for f in HISTORY_FIELDS if f.name not in existing_fields]
     if missing:
         cols_sql = ", ".join([f"{f.name} {f.dataType.simpleString()}" for f in missing])
-        spark.sql(f"ALTER TABLE {HISTORY_TABLE} ADD COLUMNS ({cols_sql})")
+        spark.sql(f"ALTER TABLE {table_name} ADD COLUMNS ({cols_sql})")
 
 
 def _with_history_fields(df):
@@ -161,9 +162,45 @@ def _with_history_fields(df):
     return ensure_columns(df, HISTORY_FIELDS)
 
 
+def _parse_ingest_ts(col_name: str):
+    raw = F.col(col_name)
+    raw_str = raw.cast("string")
+    raw_long = raw.cast("long")
+
+    # Heuristic: treat large numeric values as epoch (ms/us/ns) and scale to seconds.
+    epoch_seconds = (
+        F.when(raw_long.isNull(), F.lit(None).cast("double"))
+        .when(raw_long >= F.lit(10**18), raw_long / F.lit(1e9))   # nanos -> seconds
+        .when(raw_long >= F.lit(10**15), raw_long / F.lit(1e6))   # micros -> seconds
+        .when(raw_long >= F.lit(10**12), raw_long / F.lit(1e3))   # millis -> seconds
+        .when(raw_long >= F.lit(10**9), raw_long.cast("double"))  # seconds
+        .otherwise(F.lit(None).cast("double"))
+    )
+    epoch_ts = F.to_timestamp(F.from_unixtime(epoch_seconds))
+
+    normalized = F.regexp_replace(raw_str, "T", " ")
+    normalized = F.regexp_replace(normalized, "Z$", "")
+
+    return F.coalesce(
+        epoch_ts,
+        F.to_timestamp(raw_str),
+        F.to_timestamp(normalized)
+    )
+
+
+def _coerce_ingest_ts(df):
+    if "ingest_ts" not in df.columns:
+        return df
+    field = next((f for f in df.schema.fields if f.name == "ingest_ts"), None)
+    if field is not None and isinstance(field.dataType, TimestampType):
+        return df
+    return df.withColumn("ingest_ts", _parse_ingest_ts("ingest_ts"))
+
+
 def merge_history_with_retry(
     incoming_df,
     current_table: str,
+    history_table: str,
     retries: int = 3,
     sleep_sec: float = 2.0,
     materialized: bool = False
@@ -211,9 +248,9 @@ def merge_history_with_retry(
         history_inserts = new_rows.unionByName(changed_rows)
         if not history_inserts.rdd.isEmpty():
             history_inserts = _with_history_fields(history_inserts)
-            ensure_history_table(history_inserts)
+            ensure_history_table(history_inserts, history_table)
 
-        if spark.catalog.tableExists(HISTORY_TABLE):
+        if spark.catalog.tableExists(history_table):
             changed_keys = (
                 changed_rows
                 .select(
@@ -230,7 +267,7 @@ def merge_history_with_retry(
                     if not changed_keys.rdd.isEmpty():
                         changed_keys.createOrReplaceTempView("history_changes")
                         close_sql = f"""
-                            MERGE INTO {HISTORY_TABLE} h
+                            MERGE INTO {history_table} h
                             USING history_changes c
                             ON h.entity_key_hash = c.entity_key_hash
                                AND h.is_current = true
@@ -245,7 +282,7 @@ def merge_history_with_retry(
                         insert_cols = ", ".join([f.name for f in HISTORY_FIELDS])
                         insert_vals = ", ".join([f"s.{f.name}" for f in HISTORY_FIELDS])
                         insert_sql = f"""
-                            MERGE INTO {HISTORY_TABLE} h
+                            MERGE INTO {history_table} h
                             USING history_inserts s
                             ON h.version_id = s.version_id
                             WHEN NOT MATCHED THEN
@@ -366,18 +403,6 @@ def load_contract_cached(path: str) -> dict:
     return contract
 
 
-def load_latest_schema_cached(spark, schema_root: str, topic_name: str):
-    now = time.time()
-    cached = _schema_cache.get(topic_name)
-    if cached and (now - cached[0]) < SCHEMA_CACHE_TTL_SEC:
-        return cached[1]
-
-    schema = load_latest_schema(spark, schema_root, topic_name)
-    if schema is not None:
-        _schema_cache[topic_name] = (now, schema)
-    return schema
-
-
 def apply_rules(col_expr, rules):
     if not rules:
         return col_expr
@@ -445,119 +470,83 @@ def conform_df(df, contract: dict):
     return df
 
 # ------------------------------------------------------------------------------
-# Streaming from MinIO object events (Kafka)
+# Batch: bronze_current -> silver (per source)
 # ------------------------------------------------------------------------------
 
-def process_batch(batch_df, batch_id):
-    if batch_df.rdd.isEmpty():
-        return
-    batch_ts_row = batch_df.select(F.max("timestamp").alias("batch_ts")).collect()[0]["batch_ts"]
-    batch_ts = batch_ts_row if batch_ts_row is not None else datetime.now(timezone.utc)
-
-    decoded = extract_decoded_events(
-        batch_df,
-        default_bucket="bronze",
-        allowed_topics=[RAPID7_TOPIC, FORTI_TOPIC, SENTINEL_TOPIC],
-        batch_ts=batch_ts,
-        max_files_per_batch=MAX_FILES_PER_BATCH,
-    )
-
-    if decoded.rdd.isEmpty():
-        return
-
-    rows = decoded.select("topic_name", "file_path", "event_time", "ingest_ts").collect()
-    topic_paths = {RAPID7_TOPIC: [], FORTI_TOPIC: [], SENTINEL_TOPIC: []}
-    for r in rows:
-        topic_paths[r["topic_name"]].append((r["file_path"], r["event_time"], r["ingest_ts"]))
-
-    incoming = []
-
-    def _read_topic(topic_name, normalize_fn):
-        entries = topic_paths[topic_name]
-        if not entries:
-            return
-        paths = list(dict.fromkeys([e[0] for e in entries]))
-        if not paths:
-            return
-        existing, _missing = filter_existing_paths(
-            spark, paths, READ_RETRY_COUNT, READ_RETRY_SLEEP_SEC
-        )
-        if not existing:
-            return
-        schema = load_latest_schema_cached(spark, SCHEMA_ROOT, topic_name)
-        if schema is None:
-            raise RuntimeError(f"No inferred schema found for {topic_name}")
-
-        meta_by_path = {p: (et, it) for p, et, it in entries}
-        entries_existing = [
-            (p, *meta_by_path.get(p, (None, batch_ts))) for p in existing
-        ]
-        df = read_topic_files(spark, entries_existing, schema, JSON_OPTIONS, batch_ts)
-        if df is None:
-            return
-
-        incoming.append(normalize_fn(df))
-
-    _read_topic(RAPID7_TOPIC, normalize_rapid7)
-    _read_topic(FORTI_TOPIC, normalize_fortisiem)
-    _read_topic(SENTINEL_TOPIC, normalize_sentinel)
-
-    if not incoming:
-        return
-
-    combined = incoming[0]
-    for df in incoming[1:]:
-        combined = combined.unionByName(df)
-
-    # Deduplicate per entity_key_hash by most recent timestamps
-    combined = combined.filter(col("entity_key_hash").isNotNull())
+def _dedupe_latest(df):
+    df = df.filter(col("entity_key_hash").isNotNull())
     order_col = F.coalesce(col("source_updated_at"), col("event_time"), col("ingest_ts"))
     w = Window.partitionBy("entity_key_hash").orderBy(order_col.desc(), col("ingest_ts").desc())
-    combined = (
-        combined.withColumn("_rn", F.row_number().over(w))
+    return (
+        df.withColumn("_rn", F.row_number().over(w))
         .filter(col("_rn") == 1)
         .drop("_rn")
     )
 
+
+def process_source(source_name, input_table, current_table, history_table, normalize_fn, contract):
+    if not spark.catalog.tableExists(input_table):
+        print(f"[WARN] Source table not found: {input_table}")
+        return
+
+    raw_df = spark.table(input_table)
+    raw_df = _coerce_ingest_ts(raw_df)
+    normalized = normalize_fn(raw_df)
+
+    if normalized.rdd.isEmpty():
+        print(f"[INFO] No rows for {source_name}")
+        return
+
+    normalized = _dedupe_latest(normalized)
+
     try:
-        contract = load_contract_cached(CONFORMED_CONTRACT_PATH)
-        conformed = conform_df(combined, contract).coalesce(COALESCE_PARTITIONS)
+        conformed = conform_df(normalized, contract).coalesce(COALESCE_PARTITIONS)
         conformed = conformed.persist()
         try:
-            row_count = conformed.count()
-            if row_count == 0:
+            if conformed.rdd.isEmpty():
+                print(f"[INFO] No conformed rows for {source_name}")
                 return
-            merge_history_with_retry(conformed, CONFORMED_TABLE, materialized=True)
-            merge_with_retry(conformed, CONFORMED_TABLE, materialized=True)
+            merge_history_with_retry(
+                conformed,
+                current_table=current_table,
+                history_table=history_table,
+                materialized=True
+            )
+            merge_with_retry(conformed, current_table, materialized=True)
         finally:
             conformed.unpersist()
     except Exception as e:
-        # Conformed output is the only target now; surface errors clearly.
-        print(f"[ERROR] Conformance failed, no data written: {e}")
+        print(f"[ERROR] {source_name} conformance failed: {e}")
 
 
-# ------------------------------------------------------------------------------
-# Streaming query
-# ------------------------------------------------------------------------------
+def main():
+    contract = load_contract_cached(CONFORMED_CONTRACT_PATH)
 
-events = (
-    spark.readStream
-    .format("kafka")
-    .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP)
-    .option("subscribe", KAFKA_TOPIC)
-    .option("startingOffsets", STARTING_OFFSETS)
-    .option("maxOffsetsPerTrigger", MAX_OFFSETS_PER_TRIGGER)
-    .load()
-)
+    process_source(
+        "rapid7",
+        RAPID7_BRONZE_CURRENT_TABLE,
+        RAPID7_SILVER_CURRENT_TABLE,
+        RAPID7_SILVER_HISTORY_TABLE,
+        normalize_rapid7,
+        contract,
+    )
+    process_source(
+        "fortisiem",
+        FORTI_BRONZE_CURRENT_TABLE,
+        FORTI_SILVER_CURRENT_TABLE,
+        FORTI_SILVER_HISTORY_TABLE,
+        normalize_fortisiem,
+        contract,
+    )
+    process_source(
+        "sentinelone",
+        SENTINEL_BRONZE_CURRENT_TABLE,
+        SENTINEL_SILVER_CURRENT_TABLE,
+        SENTINEL_SILVER_HISTORY_TABLE,
+        normalize_sentinel,
+        contract,
+    )
 
-query = (
-    events.writeStream
-    .outputMode("append")
-    .option("checkpointLocation", EVENTS_CKPT)
-    .trigger(processingTime=TRIGGER_INTERVAL)
-    .foreachBatch(process_batch)
-    .start()
-)
 
-# Keep the container running (returns/throws if any query terminates)
-spark.streams.awaitAnyTermination()
+if __name__ == "__main__":
+    main()

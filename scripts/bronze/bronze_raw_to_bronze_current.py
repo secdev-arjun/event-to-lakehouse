@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
-from pyspark.sql.types import StructField, StringType, TimestampType, StructType
+from pyspark.sql.types import StructField, StringType, TimestampType, StructType, ArrayType, MapType
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(SCRIPT_DIR)
@@ -13,9 +13,6 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 
-from mapping.sources.rapid7 import RAPID7_TOPIC
-from mapping.sources.fortisiem import FORTI_TOPIC
-from mapping.sources.sentinel import SENTINEL_TOPIC
 
 # ------------------------------------------------------------------------------
 # Spark session (configured by docker spark-submit)
@@ -57,6 +54,17 @@ SENTINEL_CURRENT_TABLE = os.getenv(
     "iceberg.bronze_current.sentinalone__agents__current"
 )
 
+ENTITY_ID_CONFIG_DEFAULTS = {
+    "rapid7__assets": {"fields": ["id"]},
+    "sentinalone__agents": {"fields": ["id"]},
+    "fortisiem__device": {"fields": ["naturalId"]},
+}
+ENTITY_ID_DELIMITER = "__"
+ENTITY_ID_NULL_TOKEN = "<null>"
+# Escape delimiter occurrences inside values by prefixing with a backslash.
+ENTITY_ID_ESCAPE_TOKEN = "\\__"
+SOURCE_COLUMN = "source"
+
 CHECKPOINT_TABLE = os.getenv(
     "BRONZE_CURRENT_CHECKPOINT_TABLE",
     "iceberg.bronze_current.bronze_current_checkpoint"
@@ -75,6 +83,83 @@ CHECKPOINT_FIELDS = [
 ]
 
 
+def _resolve_entity_id_config(runtime_override: dict | None = None) -> dict:
+    # Copy defaults to avoid mutation.
+    config = {k: dict(v) for k, v in ENTITY_ID_CONFIG_DEFAULTS.items()}
+    if runtime_override:
+        if not isinstance(runtime_override, dict):
+            raise ValueError("runtime_override must be a dict of source -> config")
+        for source_key, cfg in runtime_override.items():
+            if not isinstance(cfg, dict):
+                raise ValueError(f"Override for '{source_key}' must be a dict")
+            base = dict(config.get(source_key, {}))
+            base.update(cfg)
+            config[source_key] = base
+    return config
+
+
+def _validate_field_path(schema: StructType, path: str) -> None:
+    if not path or not isinstance(path, str):
+        raise ValueError("entity_id field paths must be non-empty strings")
+
+    parts = path.split(".")
+    current = schema
+    for idx, part in enumerate(parts):
+        if not isinstance(current, StructType):
+            raise ValueError(
+                f"Unsupported nested field path '{path}': "
+                f"segment '{part}' is not a struct"
+            )
+        field = next((f for f in current.fields if f.name == part), None)
+        if field is None:
+            raise ValueError(f"Configured entity_id field not found: '{path}'")
+
+        if idx < len(parts) - 1:
+            if isinstance(field.dataType, StructType):
+                current = field.dataType
+                continue
+            if isinstance(field.dataType, (ArrayType, MapType)):
+                raise ValueError(
+                    f"Nested paths through arrays/maps are not supported: '{path}'"
+                )
+            raise ValueError(
+                f"Unsupported nested field path '{path}': "
+                f"segment '{part}' is not a struct"
+            )
+
+
+def _get_entity_id_fields(config: dict, source_key: str) -> list:
+    if source_key not in config:
+        raise ValueError(f"Source '{source_key}' not found in entity_id config")
+
+    source_cfg = config.get(source_key) or {}
+    fields = source_cfg.get("fields")
+    if not isinstance(fields, list) or not fields:
+        raise ValueError(f"'fields' must be a non-empty list for '{source_key}'")
+
+    if len(fields) != len(set(fields)):
+        raise ValueError(f"Duplicate field names in fields for '{source_key}'")
+
+    return fields
+
+
+def _build_entity_id_expr(fields: list):
+    parts = []
+    for field_path in fields:
+        col_expr = F.col(field_path)
+        col_expr = col_expr.cast("string")
+        col_expr = F.trim(col_expr)
+        col_expr = F.when(col_expr.isNull(), F.lit(ENTITY_ID_NULL_TOKEN)).otherwise(col_expr)
+        # Escape delimiter occurrences to avoid collisions.
+        col_expr = F.regexp_replace(col_expr, ENTITY_ID_DELIMITER, ENTITY_ID_ESCAPE_TOKEN)
+        parts.append(col_expr)
+    return F.concat_ws(ENTITY_ID_DELIMITER, *parts)
+
+
+def _apply_source_metadata(df, source_key: str):
+    return df.withColumn(SOURCE_COLUMN, F.lit(source_key))
+
+
 def _ensure_table_from_raw(raw_df, table_name: str):
     if not spark.catalog.tableExists(table_name):
         raw_df.limit(0).writeTo(table_name).create()
@@ -85,6 +170,18 @@ def _ensure_table_from_raw(raw_df, table_name: str):
     if missing:
         cols_sql = ", ".join([f"{f.name} {f.dataType.simpleString()}" for f in missing])
         spark.sql(f"ALTER TABLE {table_name} ADD COLUMNS ({cols_sql})")
+
+
+def _needs_full_rebuild(current_table: str) -> bool:
+    if not spark.catalog.tableExists(current_table):
+        return False
+    existing_fields = {f.name for f in spark.table(current_table).schema.fields}
+    required = {"entity_id", SOURCE_COLUMN, "_ingest_ts"}
+    missing = required - existing_fields
+    if missing:
+        print(f"[WARN] {current_table} missing columns {sorted(missing)}; forcing full rebuild")
+        return True
+    return False
 
 
 def _ensure_checkpoint_table():
@@ -175,77 +272,111 @@ def _with_ingest_ts(df):
     return df.withColumn("_ingest_ts", F.current_timestamp())
 
 
-def _merge_current_raw(incoming_df, current_table: str, key_col):
+def _merge_current_raw(incoming_df, current_table: str):
     if incoming_df.rdd.isEmpty():
-        return
+        return 0
 
     _ensure_table_from_raw(incoming_df, current_table)
 
-    if spark.catalog.tableExists(current_table):
-        current_df = spark.table(current_table)
-        current_df = _with_ingest_ts(current_df)
-        current_df = current_df.withColumn("_entity_key", key_col(current_df))
-        combined = current_df.unionByName(
-            incoming_df.withColumn("_entity_key", key_col(incoming_df)),
-            allowMissingColumns=True
-        )
-    else:
-        combined = incoming_df.withColumn("_entity_key", key_col(incoming_df))
+    # Deduplicate incoming updates by latest ingest timestamp per entity_id
+    incoming_latest = _latest_per_entity(incoming_df, "entity_id")
+    incoming_latest_count = incoming_latest.count()
+    if incoming_latest_count == 0:
+        return 0
+    incoming_latest.createOrReplaceTempView("incoming_updates")
 
-    combined = _with_ingest_ts(combined)
-    combined = combined.filter(F.col("_entity_key").isNotNull())
-    latest = _latest_per_entity(combined, "_entity_key")
-    latest = latest.drop("_entity_key", "_ingest_ts")
+    all_cols = incoming_latest.columns
+    update_set = ", ".join([f"{c} = s.{c}" for c in all_cols])
+    insert_cols = ", ".join(all_cols)
+    insert_vals = ", ".join([f"s.{c}" for c in all_cols])
 
-    latest.writeTo(current_table).overwrite(F.lit(True))
+    merge_sql = f"""
+        MERGE INTO {current_table} t
+        USING incoming_updates s
+        ON t.entity_id = s.entity_id
+        WHEN MATCHED AND (t._ingest_ts IS NULL OR s._ingest_ts >= t._ingest_ts) THEN
+          UPDATE SET {update_set}
+        WHEN NOT MATCHED THEN
+          INSERT ({insert_cols}) VALUES ({insert_vals})
+    """
+    spark.sql(merge_sql)
+    return incoming_latest_count
 
 
-def _process_source(source_system, raw_table, current_table, key_col_fn):
+def _process_source(source_system, source_key, raw_table, current_table, entity_id_config):
     if not spark.catalog.tableExists(raw_table):
         print(f"[WARN] Source table not found: {raw_table}")
         return
 
+    print(f"[INFO] Processing source '{source_key}' from {raw_table}")
     raw_df = spark.table(raw_table)
     raw_df = _with_ingest_ts(raw_df)
 
-    if USE_INGEST_TS:
+    entity_id_fields = _get_entity_id_fields(entity_id_config, source_key)
+    for field_path in entity_id_fields:
+        _validate_field_path(raw_df.schema, field_path)
+
+    print(f"[INFO] entity_id fields for '{source_key}': {entity_id_fields}")
+
+    raw_df = _apply_source_metadata(raw_df, source_key)
+    raw_df = raw_df.withColumn("entity_id", _build_entity_id_expr(entity_id_fields))
+
+    # Optional incremental filter using checkpoints
+    force_full = _needs_full_rebuild(current_table)
+    if USE_INGEST_TS and not force_full:
         last_ts = _get_checkpoint(source_system)
         if last_ts is not None:
             start_ts = last_ts - timedelta(minutes=CHECKPOINT_LOOKBACK_MINUTES)
             raw_df = raw_df.filter(F.col("_ingest_ts") > F.lit(start_ts))
 
-    # Drop rows without a stable entity key
-    raw_df = raw_df.withColumn("_entity_key", key_col_fn(raw_df))
-    raw_df = raw_df.filter(F.col("_entity_key").isNotNull()).drop("_entity_key")
-
-    if raw_df.rdd.isEmpty():
-        print(f"[INFO] No new rows for {source_system}")
+    raw_count = raw_df.count()
+    print(f"[INFO] {source_key}: rows after filters = {raw_count}")
+    if raw_count == 0:
+        print(f"[INFO] No new rows for {source_key}")
         return
 
-    incoming_df = raw_df.filter(F.col("_ingest_ts").isNotNull()).drop("_ingest_ts")
-    _merge_current_raw(incoming_df, current_table, key_col_fn)
+    incoming_df = raw_df.filter(F.col("_ingest_ts").isNotNull())
+    incoming_count = incoming_df.count()
+    print(f"[INFO] {source_key}: rows with valid ingest_ts = {incoming_count}")
+    if incoming_count == 0:
+        return
+
+    sample_ids = [r["entity_id"] for r in incoming_df.select("entity_id").limit(3).collect()]
+    if sample_ids:
+        print(f"[INFO] {source_key}: entity_id samples = {sample_ids}")
+
+    merged_count = _merge_current_raw(incoming_df, current_table)
+    print(f"[INFO] {source_key}: rows merged into {current_table} = {merged_count}")
 
     if USE_INGEST_TS:
-        max_ts = raw_df.agg(F.max("_ingest_ts")).collect()[0][0]
+        max_ts = incoming_df.agg(F.max("_ingest_ts")).collect()[0][0]
         _update_checkpoint(source_system, max_ts)
 
 
 def main():
-    def rapid7_key(df):
-        vendor_id = F.col("id").cast("string")
-        return F.sha2(F.concat_ws("|", F.lit(RAPID7_TOPIC), vendor_id), 256)
+    entity_id_config = _resolve_entity_id_config()
 
-    def forti_key(df):
-        vendor_id = F.col("naturalId").cast("string")
-        return F.sha2(F.concat_ws("|", F.lit(FORTI_TOPIC), vendor_id), 256)
-
-    def sentinel_key(df):
-        vendor_id = F.coalesce(F.col("uuid"), F.col("id")).cast("string")
-        return F.sha2(F.concat_ws("|", F.lit(SENTINEL_TOPIC), vendor_id), 256)
-
-    _process_source("rapid7", RAPID7_BRONZE_TABLE, RAPID7_CURRENT_TABLE, rapid7_key)
-    _process_source("fortisiem", FORTI_BRONZE_TABLE, FORTI_CURRENT_TABLE, forti_key)
-    _process_source("sentinelone", SENTINEL_BRONZE_TABLE, SENTINEL_CURRENT_TABLE, sentinel_key)
+    _process_source(
+        "rapid7",
+        "rapid7__assets",
+        RAPID7_BRONZE_TABLE,
+        RAPID7_CURRENT_TABLE,
+        entity_id_config,
+    )
+    _process_source(
+        "fortisiem",
+        "fortisiem__device",
+        FORTI_BRONZE_TABLE,
+        FORTI_CURRENT_TABLE,
+        entity_id_config,
+    )
+    _process_source(
+        "sentinelone",
+        "sentinalone__agents",
+        SENTINEL_BRONZE_TABLE,
+        SENTINEL_CURRENT_TABLE,
+        entity_id_config,
+    )
 
 
 if __name__ == "__main__":
