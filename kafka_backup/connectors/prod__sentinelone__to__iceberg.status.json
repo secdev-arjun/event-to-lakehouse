@@ -1,0 +1,17 @@
+{
+  "name": "prod__sentinelone__to__iceberg",
+  "connector": {
+    "state": "RUNNING",
+    "worker_id": "172.20.0.15:8083",
+    "version": "1.9.2"
+  },
+  "tasks": [
+    {
+      "id": 0,
+      "state": "RUNNING",
+      "worker_id": "172.20.0.15:8083",
+      "version": "1.9.2"
+    }
+  ],
+  "type": "sink"
+}

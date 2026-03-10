@@ -3,8 +3,9 @@
   "target_table": "iceberg.silver.assets_conformed",
   "fields": {
     "schema_version": { "type": "string", "nullable": true },
+    "source": { "type": "string", "nullable": true },
+    "entity_id": { "type": "string", "nullable": true },
     "entity_key_str": { "type": "string", "nullable": true },
-    "entity_key_hash": { "type": "string", "nullable": true },
     "payload_hash": { "type": "string", "nullable": true },
     "topic_name": { "type": "string", "nullable": true },
     "vendor_id": { "type": "string", "nullable": true },
@@ -16,6 +17,8 @@
 
     "asset_uid": { "type": "string", "nullable": true, "rules": [{"op": "trim"}] },
     "source_system": { "type": "string", "nullable": true, "rules": [{"op": "trim"}, {"op": "lower"}] },
+    "site_id": { "type": "string", "nullable": true, "rules": [{"op": "trim"}] },
+    "site_name": { "type": "string", "nullable": true, "rules": [{"op": "trim"}] },
     "rapid7_id": { "type": "string", "nullable": true },
     "fortisiem_id": { "type": "string", "nullable": true },
     "asset_name": { "type": "string", "nullable": true, "rules": [{"op": "trim"}] },

@@ -127,7 +127,6 @@ def _build_mapping(base_dir: str) -> Dict[str, Dict[str, str]]:
             "topic_name": "lit(topic_name)",
             "vendor_id": "vendor_id_col.cast('string')",
             "entity_key_str": "concat_ws('|', topic_name, vendor_id)",
-            "entity_key_hash": "sha2(entity_key_str, 256)",
             "source_updated_at": "source_updated_at_col",
             "first_seen_at": "lit(None).cast('timestamp')",
             "last_seen_at": "lit(None).cast('timestamp')",

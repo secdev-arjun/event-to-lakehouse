@@ -1,206 +1,164 @@
-# Bronze → Silver Assets
+# Bronze Current → Silver Assets
 
-This document explains the **Bronze to Silver** streaming job in **`scripts/bronze/bronze_assets_to_silver_assets.py`**.
-
----
-
-**Big Idea**
-
-Imagine three friends send you notes about computers. Each friend writes notes differently.
-
-The Bronze → Silver job does three things:
-1. Collect the notes as they arrive (Kafka + MinIO files).
-2. Translate them into the **same language** (normalize fields).
-3. Keep a **clean table** of the newest truth, plus a **history** of changes.
+This document explains the **Bronze Current → Silver** batch job implemented in `scripts/bronze/bronze_assets_to_silver_assets.py`.
 
 ---
 
 **What This Job Does (One‑Line)**
 
-It reads MinIO object notifications from Kafka, loads the corresponding JSON files from S3A, normalizes them into a shared schema, then **MERGEs** into a Silver current table and a Silver history table.
+It reads the **bronze_current** tables for each source, normalizes them into a shared silver schema, computes a deterministic `payload_hash`, and **MERGEs** into **source‑specific silver current and history tables** using **(source, entity_id)** as the business key.
 
 ---
 
-**Inputs**
+**Inputs (Bronze Current Tables)**
 
-- Kafka topic: `minio.object.events`
-- MinIO files: `s3a://bronze/topics/<topic>/...`
-- Latest schema for each topic: `s3a://warehouse/schemas/<topic>/schema/`
+- `iceberg.bronze_current.rapid7__assets__current`
+- `iceberg.bronze_current.fortisiem__device__current`
+- `iceberg.bronze_current.sentinalone__agents__current`
 
----
-
-**Outputs**
-
-- Current Silver table (SCD1):
-  `iceberg.silver.assets`
-
-- History Silver table (SCD2):
-  `iceberg.silver.assets_history`
+Each bronze_current table already contains:
+- `entity_id`
+- `source`
+- raw/source fields
+- ingest metadata (`ingest_ts`)
 
 ---
 
-**Key Helper Modules**
+**Outputs (Silver Tables)**
 
-- `scripts/mapping/rapid7.py`
-- `scripts/mapping/fortisiem.py`
-- `scripts/mapping/sentinel.py`
-- `scripts/mapping/target.py`
-- `scripts/bronze/noramlizer/kafka_notifications.py`
-- `scripts/bronze/noramlizer/minio_reader.py`
+Current tables (SCD1‑style):
+- `iceberg.silver.rapid7__assets__silver__current`
+- `iceberg.silver.fortisiem__device__silver__current`
+- `iceberg.silver.sentinalone__agents__silver__current`
 
-These keep the main script readable.
+History tables (SCD2‑style):
+- `iceberg.silver.rapid7__assets__silver__history`
+- `iceberg.silver.fortisiem__device__silver__history`
+- `iceberg.silver.sentinalone__agents__silver__history`
+
+---
+
+**Business Key (Identity)**
+
+Silver identity is based on the **pair**:
+- `source`
+- `entity_id`
+
+This avoids collisions across sources. The job also computes:
+- `entity_key_str = source | entity_id`
+
+The merge logic uses **(source, entity_id)** directly. The `entity_key_str` is retained for readability and debugging.
+
+---
+
+**Change Detection**
+
+The job computes `payload_hash` from the normalized business payload fields defined in `scripts/mapping/target.py` (see `PAYLOAD_HASH_COLUMNS`).
+
+Rules:
+1. Same `(source, entity_id)` and same `payload_hash` → unchanged
+2. Same `(source, entity_id)` and different `payload_hash` → changed (new version)
+3. No existing `(source, entity_id)` → new record
 
 ---
 
 **High‑Level Flow**
 
-1. Read Kafka events (MinIO notifications).
-2. Decode file paths and filter allowed topics.
-3. Load each file using the latest inferred schema.
-4. Normalize each source into the shared schema.
-5. Union all sources into one DataFrame.
-6. Deduplicate by `entity_key_hash`.
-7. Merge into **current** table (SCD1 logic).
-8. Merge into **history** table (SCD2 logic).
+1. Read the bronze_current table for the source.
+2. Validate required columns `source` and `entity_id` exist.
+3. Normalize the data using the source‑specific mapping function.
+4. Recompute `entity_key_str` from `(source, entity_id)`.
+5. Dedupe to the latest row per `(source, entity_id)`.
+6. Apply the conformance contract and compute `payload_hash`.
+7. Merge into silver **history** (SCD2).
+8. Merge into silver **current** (SCD1).
 
 ---
 
-**How We Build Identity and Hashes**
+**Normalization (Per Source)**
 
-The job uses two important hashes:
+Each source has a mapping function that reshapes raw fields into the shared target schema:
+- `normalize_rapid7` in `scripts/mapping/sources/rapid7.py`
+- `normalize_fortisiem` in `scripts/mapping/sources/fortisiem.py`
+- `normalize_sentinel` in `scripts/mapping/sources/sentinel.py`
 
-- `entity_key_hash` = identity of the asset
-- `payload_hash` = hash of the normalized business fields
-
-```python
-.withColumn("entity_key_str", concat_ws("|", col("topic_name"), col("vendor_id")))
-.withColumn("entity_key_hash", sha2(col("entity_key_str"), 256))
-```
-
-The `payload_hash` is built from only normalized business fields:
-
-```python
-payload_hash = sha2(to_json(struct(*ordered_cols)), 256)
-```
-
-This lets us detect:
-- Same entity, same payload → only update timestamps
-- Same entity, different payload → update row + history
+Each normalization function preserves:
+- `source`
+- `entity_id`
 
 ---
 
-**How Normalization Works**
+**Conformance Contract**
 
-Each source has its own mapping function:
+The job uses the contract at:
+- `scripts/bronze/contracts/assets_silver_contract.yaml`
 
-- Rapid7: `normalize_rapid7(df)`
-- FortiSIEM: `normalize_fortisiem(df)`
-- SentinelOne: `normalize_sentinel(df)`
+The contract defines:
+- expected fields
+- per‑field rules (trim, regex_replace, cast, etc.)
 
-They all return the same **TARGET_FIELDS** structure.
-
-Example call in the main job:
-
-```python
-_read_topic(RAPID7_TOPIC, normalize_rapid7)
-_read_topic(FORTI_TOPIC, normalize_fortisiem)
-_read_topic(SENTINEL_TOPIC, normalize_sentinel)
-```
+This contract is loaded once and cached (TTL controlled by `CONTRACT_CACHE_TTL_SEC`).
 
 ---
 
-**Deduplication (One Row Per Entity Per Batch)**
+**Current Table Merge (SCD1)**
 
-We keep only the latest row per `entity_key_hash`:
-
-```python
-order_col = F.coalesce(col("source_updated_at"), col("event_time"), col("ingest_ts"))
-w = Window.partitionBy("entity_key_hash").orderBy(order_col.desc(), col("ingest_ts").desc())
-combined = combined.withColumn("_rn", F.row_number().over(w)) \
-    .filter(col("_rn") == 1) \
-    .drop("_rn")
-```
-
-This prevents multiple updates in the same batch from conflicting.
-
----
-
-**Current Table Logic (SCD1)**
-
-We MERGE into the current table:
-
-```sql
-MERGE INTO iceberg.silver.assets t
-USING incoming_updates s
-ON t.entity_key_hash = s.entity_key_hash
-WHEN MATCHED AND t.payload_hash = s.payload_hash THEN
-  UPDATE SET last_seen_at = greatest(t.last_seen_at, s.ingest_ts), ingest_ts = s.ingest_ts
-WHEN MATCHED AND t.payload_hash <> s.payload_hash THEN
-  UPDATE SET ...
-WHEN NOT MATCHED THEN
-  INSERT (...)
-```
+The current table holds the latest version per `(source, entity_id)`.
 
 Behavior:
-- New entity → INSERT
-- Same entity, same payload → only update `last_seen_at`
-- Same entity, new payload → update all fields
+1. New key → INSERT
+2. Same key + same payload → update timestamps only
+3. Same key + different payload → update all fields and timestamps
+
+Merge key:
+- `t.source = s.source AND t.entity_id = s.entity_id`
 
 ---
 
-**History Table Logic (SCD2)**
+**History Table Merge (SCD2)**
 
-The history table keeps every change.
+History keeps every version of a record.
 
-When payload changes:
-1. Close the old row (`valid_to`, `is_current = false`)
-2. Insert a new row (`valid_from`, `is_current = true`)
+Behavior:
+1. New key → insert history row (`is_current = true`)
+2. Changed payload → expire previous history row (`valid_to`, `is_current = false`) and insert new row
+3. Same payload → no history insert
 
-```sql
-MERGE INTO iceberg.silver.assets_history h
-USING history_changes c
-ON h.entity_key_hash = c.entity_key_hash AND h.is_current = true
-WHEN MATCHED THEN
-  UPDATE SET valid_to = c.valid_from, is_current = false
-```
-
-New history rows use a deterministic `version_id`:
-
-```python
-version_id = sha2(concat_ws("|", entity_key_hash, payload_hash, valid_from), 256)
-```
-
-This makes retries safe and idempotent.
+A deterministic `version_id` is derived from:
+- `source`
+- `entity_id`
+- `payload_hash`
+- `valid_from`
 
 ---
 
-**Why We Use Two Tables**
+**Key Environment Variables**
 
-- `iceberg.silver.assets` is fast and clean (latest values only)
-- `iceberg.silver.assets_history` keeps all changes for auditing
+Inputs:
+- `RAPID7_BRONZE_CURRENT_TABLE`
+- `FORTI_BRONZE_CURRENT_TABLE`
+- `SENTINEL_BRONZE_CURRENT_TABLE`
 
-This is an industry standard pattern.
+Outputs:
+- `RAPID7_SILVER_CURRENT_TABLE`
+- `RAPID7_SILVER_HISTORY_TABLE`
+- `FORTI_SILVER_CURRENT_TABLE`
+- `FORTI_SILVER_HISTORY_TABLE`
+- `SENTINEL_SILVER_CURRENT_TABLE`
+- `SENTINEL_SILVER_HISTORY_TABLE`
 
----
+Contract:
+- `CONFORMED_CONTRACT_PATH`
 
-**Configuration (Environment Variables)**
-
-Important ones:
-
-- `SCHEMA_ROOT` (default `s3a://warehouse/schemas/`)
-- `KAFKA_BOOTSTRAP_SERVERS`
-- `KAFKA_TOPIC` (default `minio.object.events`)
-- `STARTING_OFFSETS` (default `latest`)
-- `MAX_OFFSETS_PER_TRIGGER` (default `200`)
-- `TRIGGER_INTERVAL` (default `30 seconds`)
-- `MAX_FILES_PER_BATCH` (default `200`)
-- `READ_RETRY_COUNT` (default `3`)
-- `READ_RETRY_SLEEP_SEC` (default `2`)
-- `EVENTS_CKPT` (default `s3a://warehouse/checkpoints/silver_assets_events/`)
+Performance:
+- `COALESCE_PARTITIONS`
+- `CONTRACT_CACHE_TTL_SEC`
 
 ---
 
 **How to Run (Docker)**
+
+If `spark-iceberg` is configured to run this job:
 
 ```bash
 docker compose up -d spark-iceberg
@@ -216,56 +174,28 @@ docker compose logs -f spark-iceberg
 
 **How to Verify**
 
-Check current table:
+Current table:
 
 ```sql
-SELECT vendor_id, payload_hash, last_seen_at
-FROM iceberg.silver.assets
+SELECT source, entity_id, payload_hash, last_seen_at
+FROM iceberg.silver.rapid7__assets__silver__current
 ORDER BY ingest_ts DESC
 LIMIT 5;
 ```
 
-Check history table:
+History table:
 
 ```sql
-SELECT vendor_id, payload_hash, valid_from, valid_to, is_current
-FROM iceberg.silver.assets_history
+SELECT source, entity_id, payload_hash, valid_from, valid_to, is_current
+FROM iceberg.silver.rapid7__assets__silver__history
 ORDER BY valid_from DESC
 LIMIT 5;
-```
-
-Compare current vs history:
-
-```sql
-SELECT h.vendor_id, h.payload_hash AS history_payload, a.payload_hash AS current_payload
-FROM iceberg.silver.assets_history h
-JOIN iceberg.silver.assets a
-  ON h.entity_key_hash = a.entity_key_hash
-WHERE h.is_current = true;
 ```
 
 ---
 
 **Common Issues**
 
-- **ModuleNotFoundError: bronze.noramlizer**
-  The job needs the `scripts/bronze/noramlizer` package in the container.
-
-- **No inferred schema found**
-  The schema inferer has not written a schema for that topic yet.
-
-- **No new data**
-  If Kafka has no new object events, the stream stays idle.
-
----
-
-**Summary (Short)**
-
-- Kafka events tell us which files arrived
-- We read the files with the latest schema
-- We normalize to one shared format
-- We update the current table and keep history
-
----
-
-If you want a line‑by‑line walkthrough of any single normalizer, ask and I’ll add it.
+- Missing required columns (`source`, `entity_id`) in bronze_current.
+- Contract path not found or invalid format (JSON/YAML parsing fails).
+- Unexpected schema changes in normalization functions.

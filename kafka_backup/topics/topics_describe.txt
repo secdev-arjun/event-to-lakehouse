@@ -1,0 +1,164 @@
+Topic: minio.object.events	TopicId: dLxTnqNJRe6-m85hOJb4kg	PartitionCount: 1	ReplicationFactor: 1	Configs: min.insync.replicas=1,cleanup.policy=delete
+	Topic: minio.object.events	Partition: 0	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+Topic: prod__sentinelone__agents	TopicId: mkjAltEeSFqY94AUPmvuYQ	PartitionCount: 1	ReplicationFactor: 2	Configs: min.insync.replicas=1,cleanup.policy=delete
+	Topic: prod__sentinelone__agents	Partition: 0	Leader: 5	Replicas: 5,6	Isr: 6,5	Elr: 	LastKnownElr: 
+Topic: test__sentinelone__sites	TopicId: 6tL7dnJUSXmaCe088rc_sA	PartitionCount: 1	ReplicationFactor: 1	Configs: min.insync.replicas=1,cleanup.policy=delete
+	Topic: test__sentinelone__sites	Partition: 0	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+Topic: _connect-offsets	TopicId: 5XDEE28zTjyOrM2M-bkaXQ	PartitionCount: 25	ReplicationFactor: 3	Configs: min.insync.replicas=1,cleanup.policy=compact
+	Topic: _connect-offsets	Partition: 0	Leader: 4	Replicas: 4,5,6	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 1	Leader: 5	Replicas: 5,6,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 2	Leader: 6	Replicas: 6,4,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 3	Leader: 6	Replicas: 6,5,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 4	Leader: 5	Replicas: 5,4,6	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 5	Leader: 4	Replicas: 4,6,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 6	Leader: 5	Replicas: 5,4,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 7	Leader: 4	Replicas: 4,6,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 8	Leader: 6	Replicas: 6,5,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 9	Leader: 4	Replicas: 4,6,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 10	Leader: 6	Replicas: 6,5,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 11	Leader: 5	Replicas: 5,4,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 12	Leader: 5	Replicas: 5,4,6	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 13	Leader: 4	Replicas: 4,6,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 14	Leader: 6	Replicas: 6,5,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 15	Leader: 6	Replicas: 6,4,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 16	Leader: 4	Replicas: 4,5,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 17	Leader: 5	Replicas: 5,6,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 18	Leader: 6	Replicas: 6,5,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 19	Leader: 5	Replicas: 5,4,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 20	Leader: 4	Replicas: 4,6,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 21	Leader: 6	Replicas: 6,4,5	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 22	Leader: 4	Replicas: 4,5,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 23	Leader: 5	Replicas: 5,6,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: _connect-offsets	Partition: 24	Leader: 5	Replicas: 5,4,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+Topic: prod__agents__agents	TopicId: QxVJJr2fRNuAVGI0PF4ofw	PartitionCount: 1	ReplicationFactor: 1	Configs: min.insync.replicas=1
+	Topic: prod__agents__agents	Partition: 0	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+Topic: prod__rapid7__assets	TopicId: 4H3Y8BIpSg21H_nDYtdwIA	PartitionCount: 1	ReplicationFactor: 2	Configs: min.insync.replicas=1,cleanup.policy=delete
+	Topic: prod__rapid7__assets	Partition: 0	Leader: 6	Replicas: 6,4	Isr: 6,4	Elr: 	LastKnownElr: 
+Topic: test_rapid7	TopicId: 9uYmM_ZXQHK7N5rYKr-4AA	PartitionCount: 1	ReplicationFactor: 2	Configs: min.insync.replicas=1,cleanup.policy=delete
+	Topic: test_rapid7	Partition: 0	Leader: 5	Replicas: 5,6	Isr: 6,5	Elr: 	LastKnownElr: 
+Topic: _connect-status	TopicId: 5ALOJU0dQ4SDj5IaIp4Y0A	PartitionCount: 5	ReplicationFactor: 3	Configs: min.insync.replicas=1,cleanup.policy=compact
+	Topic: _connect-status	Partition: 0	Leader: 4	Replicas: 4,5,6	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: _connect-status	Partition: 1	Leader: 5	Replicas: 5,6,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: _connect-status	Partition: 2	Leader: 6	Replicas: 6,4,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-status	Partition: 3	Leader: 6	Replicas: 6,5,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: _connect-status	Partition: 4	Leader: 5	Replicas: 5,4,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+Topic: test__rapid7__assets	TopicId: jOml2stsR1iRe-029Ii1Ug	PartitionCount: 1	ReplicationFactor: 1	Configs: min.insync.replicas=1
+	Topic: test__rapid7__assets	Partition: 0	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+Topic: test__fortisiem__organizations	TopicId: psHivHMtSnK7nOLQj2PzTg	PartitionCount: 1	ReplicationFactor: 1	Configs: min.insync.replicas=1,cleanup.policy=delete
+	Topic: test__fortisiem__organizations	Partition: 0	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+Topic: test_fortisiem	TopicId: d4Sgu1w6SoSyRnZRw2N0fQ	PartitionCount: 1	ReplicationFactor: 2	Configs: min.insync.replicas=1,cleanup.policy=delete
+	Topic: test_fortisiem	Partition: 0	Leader: 4	Replicas: 4,5	Isr: 5,4	Elr: 	LastKnownElr: 
+Topic: test_sentinelone	TopicId: UjqACeEWQ86K6ooKAdAADw	PartitionCount: 1	ReplicationFactor: 2	Configs: min.insync.replicas=1,cleanup.policy=delete
+	Topic: test_sentinelone	Partition: 0	Leader: 5	Replicas: 5,6	Isr: 6,5	Elr: 	LastKnownElr: 
+Topic: __transaction_state	TopicId: qamMiKiOTbSxPijh6Ul3ig	PartitionCount: 50	ReplicationFactor: 1	Configs: compression.type=uncompressed,min.insync.replicas=1,cleanup.policy=compact,segment.bytes=104857600,unclean.leader.election.enable=false
+	Topic: __transaction_state	Partition: 0	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 1	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 2	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 3	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 4	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 5	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 6	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 7	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 8	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 9	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 10	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 11	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 12	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 13	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 14	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 15	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 16	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 17	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 18	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 19	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 20	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 21	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 22	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 23	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 24	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 25	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 26	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 27	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 28	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 29	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 30	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 31	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 32	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 33	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 34	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 35	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 36	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 37	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 38	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 39	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 40	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 41	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 42	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 43	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 44	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 45	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 46	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 47	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 48	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+	Topic: __transaction_state	Partition: 49	Leader: 4	Replicas: 4	Isr: 4	Elr: 	LastKnownElr: 
+Topic: dlq-raw-events	TopicId: BTIsBE_aTbSMpxCb_y8sIw	PartitionCount: 1	ReplicationFactor: 3	Configs: min.insync.replicas=1
+	Topic: dlq-raw-events	Partition: 0	Leader: 4	Replicas: 4,5,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+Topic: prod__fortisiem__devices	TopicId: y_-gpChQToWoM-3n4Zjp4Q	PartitionCount: 1	ReplicationFactor: 2	Configs: min.insync.replicas=1,cleanup.policy=delete
+	Topic: prod__fortisiem__devices	Partition: 0	Leader: 4	Replicas: 4,5	Isr: 5,4	Elr: 	LastKnownElr: 
+Topic: test__rapid7__sites	TopicId: 8hkq-DAdSf6PtFB2Z1qHZQ	PartitionCount: 1	ReplicationFactor: 1	Configs: compression.type=producer,remote.log.delete.on.disable=false,leader.replication.throttled.replicas=,remote.storage.enable=false,min.insync.replicas=1,segment.jitter.ms=0,remote.log.copy.disable=false,local.retention.ms=-2,cleanup.policy=delete,flush.ms=9223372036854775807,follower.replication.throttled.replicas=,compression.lz4.level=9,segment.bytes=1073741824,retention.ms=604800000,compression.gzip.level=-1,flush.messages=9223372036854775807,compression.zstd.level=3,max.compaction.lag.ms=9223372036854775807,file.delete.delay.ms=60000,max.message.bytes=1048588,min.compaction.lag.ms=0,message.timestamp.type=CreateTime,local.retention.bytes=-2,preallocate=false,min.cleanable.dirty.ratio=0.5,index.interval.bytes=4096,unclean.leader.election.enable=false,retention.bytes=-1,delete.retention.ms=86400000,message.timestamp.after.max.ms=3600000,message.timestamp.before.max.ms=9223372036854775807,segment.ms=604800000,segment.index.bytes=10485760
+	Topic: test__rapid7__sites	Partition: 0	Leader: 6	Replicas: 6	Isr: 6	Elr: 	LastKnownElr: 
+Topic: control-iceberg	TopicId: ZDH69pA4SuaNHTMLHBka-w	PartitionCount: 1	ReplicationFactor: 1	Configs: min.insync.replicas=1
+	Topic: control-iceberg	Partition: 0	Leader: 5	Replicas: 5	Isr: 5	Elr: 	LastKnownElr: 
+Topic: __consumer_offsets	TopicId: w6Fgg3e1Rn-Q2LXCn7yP0g	PartitionCount: 50	ReplicationFactor: 3	Configs: compression.type=producer,min.insync.replicas=1,cleanup.policy=compact,segment.bytes=104857600
+	Topic: __consumer_offsets	Partition: 0	Leader: 5	Replicas: 5,6,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 1	Leader: 6	Replicas: 6,4,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 2	Leader: 4	Replicas: 4,5,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 3	Leader: 4	Replicas: 4,6,5	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 4	Leader: 6	Replicas: 6,5,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 5	Leader: 5	Replicas: 5,4,6	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 6	Leader: 5	Replicas: 5,6,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 7	Leader: 6	Replicas: 6,4,5	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 8	Leader: 4	Replicas: 4,5,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 9	Leader: 6	Replicas: 6,4,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 10	Leader: 4	Replicas: 4,5,6	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 11	Leader: 5	Replicas: 5,6,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 12	Leader: 5	Replicas: 5,6,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 13	Leader: 6	Replicas: 6,4,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 14	Leader: 4	Replicas: 4,5,6	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 15	Leader: 6	Replicas: 6,4,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 16	Leader: 4	Replicas: 4,5,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 17	Leader: 5	Replicas: 5,6,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 18	Leader: 5	Replicas: 5,4,6	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 19	Leader: 4	Replicas: 4,6,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 20	Leader: 6	Replicas: 6,5,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 21	Leader: 6	Replicas: 6,4,5	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 22	Leader: 4	Replicas: 4,5,6	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 23	Leader: 5	Replicas: 5,6,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 24	Leader: 4	Replicas: 4,5,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 25	Leader: 5	Replicas: 5,6,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 26	Leader: 6	Replicas: 6,4,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 27	Leader: 6	Replicas: 6,5,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 28	Leader: 5	Replicas: 5,4,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 29	Leader: 4	Replicas: 4,6,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 30	Leader: 5	Replicas: 5,4,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 31	Leader: 4	Replicas: 4,6,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 32	Leader: 6	Replicas: 6,5,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 33	Leader: 5	Replicas: 5,6,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 34	Leader: 6	Replicas: 6,4,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 35	Leader: 4	Replicas: 4,5,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 36	Leader: 6	Replicas: 6,5,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 37	Leader: 5	Replicas: 5,4,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 38	Leader: 4	Replicas: 4,6,5	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 39	Leader: 4	Replicas: 4,5,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 40	Leader: 5	Replicas: 5,6,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 41	Leader: 6	Replicas: 6,4,5	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 42	Leader: 4	Replicas: 4,6,5	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 43	Leader: 6	Replicas: 6,5,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 44	Leader: 5	Replicas: 5,4,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 45	Leader: 6	Replicas: 6,5,4	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 46	Leader: 5	Replicas: 5,4,6	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 47	Leader: 4	Replicas: 4,6,5	Isr: 6,4,5	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 48	Leader: 4	Replicas: 4,5,6	Isr: 6,5,4	Elr: 	LastKnownElr: 
+	Topic: __consumer_offsets	Partition: 49	Leader: 5	Replicas: 5,6,4	Isr: 6,5,4	Elr: 	LastKnownElr: 
+Topic: _connect-configs	TopicId: 0z4Hz_JrTlCr-c4u6EJvKQ	PartitionCount: 1	ReplicationFactor: 3	Configs: min.insync.replicas=1,cleanup.policy=compact
+	Topic: _connect-configs	Partition: 0	Leader: 6	Replicas: 6,4,5	Isr: 6,5,4	Elr: 	LastKnownElr: 

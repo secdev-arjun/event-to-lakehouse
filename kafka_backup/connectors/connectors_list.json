@@ -1,0 +1,9 @@
+[
+  "rapid7_to_iceberg",
+  "rapid7__sites__to__iceberg",
+  "sentinelone_to_iceberg",
+  "prod__rapid7__to__iceberg",
+  "fortisiem_to_iceberg",
+  "prod__fortisiem__to__iceberg",
+  "prod__sentinelone__to__iceberg"
+]

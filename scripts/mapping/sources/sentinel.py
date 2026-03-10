@@ -9,6 +9,7 @@ from mapping.target import (
     ensure_columns,
     add_payload_hash,
     drop_corrupt_if_present,
+    col_if_exists,
     _array_sort_nullable,
     _as_timestamp,
     TARGET_FIELDS,
@@ -27,6 +28,8 @@ def normalize_sentinel(df):
 
     df = (
         clean
+        .withColumn("source", col("source"))
+        .withColumn("entity_id", col("entity_id").cast("string"))
         .withColumn("source_system", lit("sentinelone"))
         .withColumn("ingest_ts", col("ingest_ts"))
 
@@ -78,6 +81,22 @@ def normalize_sentinel(df):
         .withColumn("posture_network_quarantine_enabled", col("networkQuarantineEnabled"))
         .withColumn("posture_active_threats", col("activeThreats").cast("int"))
         .withColumn("tags", _array_sort_nullable(col("tags.sentinelone")))
+        .withColumn(
+            "site_id",
+            F.coalesce(
+                col_if_exists(clean, "siteId"),
+                col_if_exists(clean, "siteid"),
+                col_if_exists(clean, "site_id")
+            ).cast("string")
+        )
+        .withColumn(
+            "site_name",
+            F.coalesce(
+                col_if_exists(clean, "siteName"),
+                col_if_exists(clean, "sitename"),
+                col_if_exists(clean, "site_name")
+            ).cast("string")
+        )
 
         .withColumn("raw_json", to_json(struct([col(c) for c in clean.columns if c != "_corrupt_record"])) )
         .withColumn("raw_payload", col("raw_json"))

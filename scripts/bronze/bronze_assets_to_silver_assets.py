@@ -151,7 +151,8 @@ def _with_history_fields(df):
               sha2(
                   concat_ws(
                       "|",
-                      col("entity_key_hash"),
+                      col("source"),
+                      col("entity_id"),
                       col("payload_hash"),
                       col("valid_from").cast("string")
                   ),
@@ -216,7 +217,7 @@ def merge_history_with_retry(
         if spark.catalog.tableExists(current_table):
             current_df = (
                 spark.table(current_table)
-                .select("entity_key_hash", "payload_hash")
+                .select("source", "entity_id", "payload_hash")
                 .withColumnRenamed("payload_hash", "cur_payload_hash")
             )
 
@@ -225,7 +226,7 @@ def merge_history_with_retry(
             changed_rows = incoming_df.limit(0)
             same_rows = incoming_df.limit(0)
         else:
-            joined = incoming_df.join(current_df, "entity_key_hash", "left")
+            joined = incoming_df.join(current_df, ["source", "entity_id"], "left")
             new_rows = (
                 joined.filter(col("cur_payload_hash").isNull())
                 .select(incoming_df.columns)
@@ -242,24 +243,36 @@ def merge_history_with_retry(
                     col("cur_payload_hash").isNotNull() &
                     (col("payload_hash") == col("cur_payload_hash"))
                 )
-                .select("entity_key_hash", "payload_hash", "ingest_ts")
+                .select("source", "entity_id", "payload_hash", "ingest_ts")
             )
+
+        new_count = new_rows.count()
+        changed_count = changed_rows.count()
+        same_count = same_rows.count()
+        print(
+            f"[INFO] History merge: new={new_count}, changed={changed_count}, unchanged={same_count}"
+        )
 
         history_inserts = new_rows.unionByName(changed_rows)
         if not history_inserts.rdd.isEmpty():
             history_inserts = _with_history_fields(history_inserts)
             ensure_history_table(history_inserts, history_table)
+            print(
+                f"[INFO] History inserts pending: {history_inserts.count()}"
+            )
 
         if spark.catalog.tableExists(history_table):
             changed_keys = (
                 changed_rows
                 .select(
-                    "entity_key_hash",
+                    "source",
+                    "entity_id",
                     "payload_hash",
                     col("ingest_ts").alias("valid_from")
                 )
                 .distinct()
             )
+            print(f"[INFO] History rows to expire: {changed_keys.count()}")
 
             last_err = None
             for attempt in range(retries):
@@ -269,7 +282,8 @@ def merge_history_with_retry(
                         close_sql = f"""
                             MERGE INTO {history_table} h
                             USING history_changes c
-                            ON h.entity_key_hash = c.entity_key_hash
+                            ON h.source = c.source
+                               AND h.entity_id = c.entity_id
                                AND h.is_current = true
                                AND h.payload_hash <> c.payload_hash
                             WHEN MATCHED THEN
@@ -338,7 +352,7 @@ def merge_with_retry(
         merge_sql = f"""
             MERGE INTO {table_name} t
             USING incoming_updates s
-            ON t.entity_key_hash = s.entity_key_hash
+            ON t.source = s.source AND t.entity_id = s.entity_id
             WHEN MATCHED AND t.payload_hash = s.payload_hash THEN
               UPDATE SET {update_same_sql}
             WHEN MATCHED AND t.payload_hash <> s.payload_hash THEN
@@ -474,9 +488,9 @@ def conform_df(df, contract: dict):
 # ------------------------------------------------------------------------------
 
 def _dedupe_latest(df):
-    df = df.filter(col("entity_key_hash").isNotNull())
+    df = df.filter(col("source").isNotNull() & col("entity_id").isNotNull())
     order_col = F.coalesce(col("source_updated_at"), col("event_time"), col("ingest_ts"))
-    w = Window.partitionBy("entity_key_hash").orderBy(order_col.desc(), col("ingest_ts").desc())
+    w = Window.partitionBy("source", "entity_id").orderBy(order_col.desc(), col("ingest_ts").desc())
     return (
         df.withColumn("_rn", F.row_number().over(w))
         .filter(col("_rn") == 1)
@@ -490,6 +504,13 @@ def process_source(source_name, input_table, current_table, history_table, norma
         return
 
     raw_df = spark.table(input_table)
+    missing_cols = {"source", "entity_id"} - set(raw_df.columns)
+    if missing_cols:
+        raise ValueError(
+            f"Input table {input_table} missing required columns: {sorted(missing_cols)}"
+        )
+    raw_count = raw_df.count()
+    print(f"[INFO] {source_name}: rows read from {input_table} = {raw_count}")
     raw_df = _coerce_ingest_ts(raw_df)
     normalized = normalize_fn(raw_df)
 
@@ -497,7 +518,22 @@ def process_source(source_name, input_table, current_table, history_table, norma
         print(f"[INFO] No rows for {source_name}")
         return
 
+    if "source" not in normalized.columns or "entity_id" not in normalized.columns:
+        raise ValueError(
+            f"Normalized output for {source_name} is missing required columns: "
+            f"{[c for c in ['source', 'entity_id'] if c not in normalized.columns]}"
+        )
+
+    normalized = normalized.withColumn("source", col("source"))
+    normalized = normalized.withColumn("entity_id", col("entity_id").cast("string"))
+    normalized = normalized.withColumn(
+        "entity_key_str",
+        concat_ws("|", col("source"), col("entity_id"))
+    )
+
     normalized = _dedupe_latest(normalized)
+    normalized_count = normalized.count()
+    print(f"[INFO] {source_name}: rows after normalization/dedupe = {normalized_count}")
 
     try:
         conformed = conform_df(normalized, contract).coalesce(COALESCE_PARTITIONS)
@@ -506,6 +542,8 @@ def process_source(source_name, input_table, current_table, history_table, norma
             if conformed.rdd.isEmpty():
                 print(f"[INFO] No conformed rows for {source_name}")
                 return
+            conformed_count = conformed.count()
+            print(f"[INFO] {source_name}: rows after conformance = {conformed_count}")
             merge_history_with_retry(
                 conformed,
                 current_table=current_table,

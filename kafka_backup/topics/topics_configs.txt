@@ -1,0 +1,646 @@
+All configs for topic minio.object.events are:
+  cleanup.policy=delete sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=delete, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic prod__sentinelone__agents are:
+  cleanup.policy=delete sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=delete, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic test__sentinelone__sites are:
+  cleanup.policy=delete sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=delete, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic prod__agents__agents are:
+  cleanup.policy=delete sensitive=false synonyms={DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic _connect-offsets are:
+  cleanup.policy=compact sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=compact, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic test_rapid7 are:
+  cleanup.policy=delete sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=delete, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic prod__rapid7__assets are:
+  cleanup.policy=delete sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=delete, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic _connect-status are:
+  cleanup.policy=compact sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=compact, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic test__rapid7__assets are:
+  cleanup.policy=delete sensitive=false synonyms={DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic test__fortisiem__organizations are:
+  cleanup.policy=delete sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=delete, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic test_fortisiem are:
+  cleanup.policy=delete sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=delete, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic test_sentinelone are:
+  cleanup.policy=delete sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=delete, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic dlq-raw-events are:
+  cleanup.policy=delete sensitive=false synonyms={DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic prod__fortisiem__devices are:
+  cleanup.policy=delete sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=delete, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic __transaction_state are:
+  cleanup.policy=compact sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=compact, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=uncompressed sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:compression.type=uncompressed, DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:min.insync.replicas=1, DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=104857600 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:segment.bytes=104857600, DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:unclean.leader.election.enable=false, DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic test__rapid7__sites are:
+  cleanup.policy=delete sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=delete, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:compression.gzip.level=-1, DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:compression.lz4.level=9, DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:compression.type=producer, DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:compression.zstd.level=3, DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:delete.retention.ms=86400000, DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:file.delete.delay.ms=60000, DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:flush.messages=9223372036854775807, DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:flush.ms=9223372036854775807}
+  follower.replication.throttled.replicas= sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:follower.replication.throttled.replicas=}
+  index.interval.bytes=4096 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:index.interval.bytes=4096, DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:leader.replication.throttled.replicas=}
+  local.retention.bytes=-2 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:local.retention.bytes=-2, DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:local.retention.ms=-2, DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:max.compaction.lag.ms=9223372036854775807, DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:max.message.bytes=1048588, DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:message.timestamp.after.max.ms=3600000, DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:message.timestamp.before.max.ms=9223372036854775807, DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:message.timestamp.type=CreateTime, DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:min.cleanable.dirty.ratio=0.5, DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:min.compaction.lag.ms=0, DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:min.insync.replicas=1, DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:preallocate=false, DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:remote.log.copy.disable=false}
+  remote.log.delete.on.disable=false sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:remote.log.delete.on.disable=false}
+  remote.storage.enable=false sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:remote.storage.enable=false}
+  retention.bytes=-1 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:retention.bytes=-1, DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:retention.ms=604800000}
+  segment.bytes=1073741824 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:segment.bytes=1073741824, DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:segment.index.bytes=10485760, DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:segment.jitter.ms=0}
+  segment.ms=604800000 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:segment.ms=604800000}
+  unclean.leader.election.enable=false sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:unclean.leader.election.enable=false, DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic control-iceberg are:
+  cleanup.policy=delete sensitive=false synonyms={DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic __consumer_offsets are:
+  cleanup.policy=compact sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=compact, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:compression.type=producer, DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=104857600 sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:segment.bytes=104857600, DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}
+All configs for topic _connect-configs are:
+  cleanup.policy=compact sensitive=false synonyms={DYNAMIC_TOPIC_CONFIG:cleanup.policy=compact, DEFAULT_CONFIG:log.cleanup.policy=delete}
+  compression.gzip.level=-1 sensitive=false synonyms={DEFAULT_CONFIG:compression.gzip.level=-1}
+  compression.lz4.level=9 sensitive=false synonyms={DEFAULT_CONFIG:compression.lz4.level=9}
+  compression.type=producer sensitive=false synonyms={DEFAULT_CONFIG:compression.type=producer}
+  compression.zstd.level=3 sensitive=false synonyms={DEFAULT_CONFIG:compression.zstd.level=3}
+  delete.retention.ms=86400000 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.delete.retention.ms=86400000}
+  file.delete.delay.ms=60000 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.delete.delay.ms=60000}
+  flush.messages=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.flush.interval.messages=9223372036854775807}
+  flush.ms=9223372036854775807 sensitive=false synonyms={}
+  follower.replication.throttled.replicas= sensitive=false synonyms={}
+  index.interval.bytes=4096 sensitive=false synonyms={DEFAULT_CONFIG:log.index.interval.bytes=4096}
+  leader.replication.throttled.replicas= sensitive=false synonyms={}
+  local.retention.bytes=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.bytes=-2}
+  local.retention.ms=-2 sensitive=false synonyms={DEFAULT_CONFIG:log.local.retention.ms=-2}
+  max.compaction.lag.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.max.compaction.lag.ms=9223372036854775807}
+  max.message.bytes=1048588 sensitive=false synonyms={DEFAULT_CONFIG:message.max.bytes=1048588}
+  message.timestamp.after.max.ms=3600000 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.after.max.ms=3600000}
+  message.timestamp.before.max.ms=9223372036854775807 sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.before.max.ms=9223372036854775807}
+  message.timestamp.type=CreateTime sensitive=false synonyms={DEFAULT_CONFIG:log.message.timestamp.type=CreateTime}
+  min.cleanable.dirty.ratio=0.5 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.cleanable.ratio=0.5}
+  min.compaction.lag.ms=0 sensitive=false synonyms={DEFAULT_CONFIG:log.cleaner.min.compaction.lag.ms=0}
+  min.insync.replicas=1 sensitive=false synonyms={DYNAMIC_DEFAULT_BROKER_CONFIG:min.insync.replicas=1, STATIC_BROKER_CONFIG:min.insync.replicas=1, DEFAULT_CONFIG:min.insync.replicas=1}
+  preallocate=false sensitive=false synonyms={DEFAULT_CONFIG:log.preallocate=false}
+  remote.log.copy.disable=false sensitive=false synonyms={}
+  remote.log.delete.on.disable=false sensitive=false synonyms={}
+  remote.storage.enable=false sensitive=false synonyms={}
+  retention.bytes=-1 sensitive=false synonyms={DEFAULT_CONFIG:log.retention.bytes=-1}
+  retention.ms=604800000 sensitive=false synonyms={}
+  segment.bytes=1073741824 sensitive=false synonyms={DEFAULT_CONFIG:log.segment.bytes=1073741824}
+  segment.index.bytes=10485760 sensitive=false synonyms={DEFAULT_CONFIG:log.index.size.max.bytes=10485760}
+  segment.jitter.ms=0 sensitive=false synonyms={}
+  segment.ms=604800000 sensitive=false synonyms={}
+  unclean.leader.election.enable=false sensitive=false synonyms={DEFAULT_CONFIG:unclean.leader.election.enable=false}

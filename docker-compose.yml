@@ -416,8 +416,8 @@ services:
       - default
     entrypoint:
       - spark-submit
-      - --packages
-      - org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.5.1,org.apache.hadoop:hadoop-aws:3.3.4,software.amazon.awssdk:bundle:2.24.8,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.5
+      - --jars
+      - /opt/spark/jars-extra/*.jar
       - --conf
       - spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
       - --conf

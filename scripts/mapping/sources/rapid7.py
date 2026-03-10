@@ -21,6 +21,8 @@ def normalize_rapid7(df):
 
     df = (
         rapid7_clean
+        .withColumn("source", col("source"))
+        .withColumn("entity_id", col("entity_id").cast("string"))
         .withColumn("source_system", lit("rapid7"))
         .withColumn("ingest_ts", col("ingest_ts"))
         .withColumn("rapid7_id", col("id").cast("string"))
@@ -73,6 +75,8 @@ def normalize_rapid7(df):
         .withColumn("posture_network_quarantine_enabled", lit(None).cast("boolean"))
         .withColumn("posture_active_threats", lit(None).cast("int"))
         .withColumn("tags", lit(None).cast(ArrayType(StringType())))
+        .withColumn("site_id", col("site_id").cast("string"))
+        .withColumn("site_name", col("site_name").cast("string"))
 
         .withColumn(
             "raw_json",

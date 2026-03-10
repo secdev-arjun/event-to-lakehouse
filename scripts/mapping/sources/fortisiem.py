@@ -28,6 +28,8 @@ def normalize_fortisiem(df):
 
     df = (
         forti_clean
+        .withColumn("source", col("source"))
+        .withColumn("entity_id", col("entity_id").cast("string"))
         .withColumn("source_system", lit("fortisiem"))
         .withColumn("ingest_ts", col("ingest_ts"))
         .withColumn("rapid7_id", lit(None).cast("string"))
@@ -77,6 +79,14 @@ def normalize_fortisiem(df):
         .withColumn("posture_network_quarantine_enabled", lit(None).cast("boolean"))
         .withColumn("posture_active_threats", lit(None).cast("int"))
         .withColumn("tags", lit(None).cast(ArrayType(StringType())))
+        .withColumn(
+            "site_id",
+            nested_col_if_exists(forti_clean, "organization.attr_id").cast("string")
+        )
+        .withColumn(
+            "site_name",
+            nested_col_if_exists(forti_clean, "organization.attr_name").cast("string")
+        )
 
         .withColumn(
             "raw_json",

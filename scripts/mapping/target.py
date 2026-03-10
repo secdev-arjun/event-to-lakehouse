@@ -22,7 +22,6 @@ def add_common_fields(df, topic_name: str, vendor_id_col, source_updated_at_col)
         .withColumn("topic_name", lit(topic_name))
         .withColumn("vendor_id", vendor_id_col.cast("string"))
         .withColumn("entity_key_str", concat_ws("|", col("topic_name"), col("vendor_id")))
-        .withColumn("entity_key_hash", sha2(col("entity_key_str"), 256))
         .withColumn("source_updated_at", source_updated_at_col)
         .withColumn("first_seen_at", lit(None).cast("timestamp"))
         .withColumn("last_seen_at", lit(None).cast("timestamp"))
@@ -57,8 +56,9 @@ def drop_corrupt_if_present(df):
 
 TARGET_FIELDS = [
     StructField("schema_version", StringType(), True),
+    StructField("source", StringType(), True),
+    StructField("entity_id", StringType(), True),
     StructField("entity_key_str", StringType(), True),
-    StructField("entity_key_hash", StringType(), True),
     StructField("payload_hash", StringType(), True),
     StructField("topic_name", StringType(), True),
     StructField("vendor_id", StringType(), True),
@@ -70,6 +70,8 @@ TARGET_FIELDS = [
 
     StructField("asset_uid", StringType(), True),
     StructField("source_system", StringType(), True),
+    StructField("site_id", StringType(), True),
+    StructField("site_name", StringType(), True),
     StructField("rapid7_id", StringType(), True),
     StructField("fortisiem_id", StringType(), True),
     StructField("asset_name", StringType(), True),
@@ -119,6 +121,8 @@ TARGET_FIELDS = [
 PAYLOAD_HASH_COLUMNS = [
     "asset_uid",
     "source_system",
+    "site_id",
+    "site_name",
     "rapid7_id",
     "fortisiem_id",
     "asset_name",
