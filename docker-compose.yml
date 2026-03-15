@@ -446,6 +446,95 @@ services:
       - spark.sql.files.ignoreCorruptFiles=true
       - /opt/spark/scripts/bronze/bronze_assets_to_silver_assets.py
 
+  # ----------------------------
+  # Spark Standalone Cluster (Master + Worker)
+  # ----------------------------
+  spark-master:
+    image: tabulario/spark-iceberg
+    container_name: spark-master
+    restart: unless-stopped
+    logging: *default-logging
+    cpus: "1.0"
+    mem_limit: 1g
+    ports:
+      - "7077:7077"   # Spark master RPC
+      - "8081:8080"   # Spark master UI
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_REGION: us-east-1
+      # Set to the host/IP reachable by Airflow for spark-submit.
+      SPARK_MASTER_HOST: "172.16.232.50"
+    networks:
+      - lakehouse_net
+      - default
+    entrypoint:
+      - /bin/sh
+      - -lc
+      - |
+        MASTER_HOST="${SPARK_MASTER_HOST:-spark-master}";
+        /opt/spark/bin/spark-class \
+          org.apache.spark.deploy.master.Master \
+          --host "$$MASTER_HOST" \
+          --port 7077 \
+          --webui-port 8080
+
+  spark-worker:
+    image: tabulario/spark-iceberg
+    container_name: spark-worker
+    restart: unless-stopped
+    logging: *default-logging
+    cpus: "1.0"
+    mem_limit: 4g
+    ports:
+      - "8082:8081"   # Spark worker UI
+    depends_on:
+      - spark-master
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_REGION: us-east-1
+      SPARK_WORKER_CORES: "4"
+      SPARK_WORKER_MEMORY: "4g"
+    networks:
+      - lakehouse_net
+      - default
+    entrypoint:
+      - /bin/sh
+      - -lc
+      - |
+        MASTER_HOST="${SPARK_MASTER_HOST:-spark-master}";
+        /opt/spark/bin/spark-class \
+          org.apache.spark.deploy.worker.Worker \
+          "spark://$$MASTER_HOST:7077" \
+          --webui-port 8081
+
+  livy:
+    build:
+      context: ./docker/livy
+    container_name: livy
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      - spark-master
+      - spark-worker
+      - rest
+      - minio
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_REGION: us-east-1
+    volumes:
+      - ./scripts:/opt/spark/scripts
+      - ./jars:/opt/spark/jars-extra:ro
+      - livy_logs:/opt/livy/logs
+      - livy_tmp:/opt/livy/tmp
+    ports:
+      - "8998:8998"
+    networks:
+      - lakehouse_net
+      - default
+
   gold-job:
     image: tabulario/spark-iceberg
     container_name: gold-job
@@ -656,6 +745,8 @@ volumes:
   broker_2_data:
   broker_3_data:
   postgres_data:
+  livy_logs:
+  livy_tmp:
 
 networks:
   lakehouse_net:
