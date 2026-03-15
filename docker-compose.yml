@@ -515,6 +515,7 @@ services:
     container_name: livy
     restart: unless-stopped
     logging: *default-logging
+    entrypoint: ["/opt/livy/bin/livy-server"]
     depends_on:
       - spark-master
       - spark-worker
