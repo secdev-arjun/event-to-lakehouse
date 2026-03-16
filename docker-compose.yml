@@ -485,7 +485,7 @@ services:
     restart: unless-stopped
     logging: *default-logging
     cpus: "1.0"
-    mem_limit: 4g
+    mem_limit: 2g
     ports:
       - "8082:8081"   # Spark worker UI
     depends_on:
@@ -494,8 +494,8 @@ services:
       AWS_ACCESS_KEY_ID: minioadmin
       AWS_SECRET_ACCESS_KEY: minioadmin
       AWS_REGION: us-east-1
-      SPARK_WORKER_CORES: "4"
-      SPARK_WORKER_MEMORY: "4g"
+      SPARK_WORKER_CORES: "2"
+      SPARK_WORKER_MEMORY: "2g"
     networks:
       - lakehouse_net
       - default

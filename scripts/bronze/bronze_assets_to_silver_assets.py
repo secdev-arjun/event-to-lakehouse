@@ -2,11 +2,12 @@ import os
 import sys
 import time
 import json
+from datetime import datetime, timezone, timedelta
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
-from pyspark.sql.types import StructField, StringType, BooleanType, TimestampType
+from pyspark.sql.types import StructField, StringType, BooleanType, TimestampType, StructType
 from pyspark.sql.functions import (
     col, lit, concat_ws, sha2
 )
@@ -95,6 +96,14 @@ CONFORMED_CONTRACT_PATH = os.getenv(
 COALESCE_PARTITIONS = int(os.getenv("COALESCE_PARTITIONS", "4"))
 CONTRACT_CACHE_TTL_SEC = int(os.getenv("CONTRACT_CACHE_TTL_SEC", "300"))
 
+# Checkpointing (incremental loads)
+SILVER_CHECKPOINT_TABLE = os.getenv(
+    "SILVER_CHECKPOINT_TABLE",
+    "iceberg.silver.silver_current_checkpoint"
+)
+SILVER_CHECKPOINT_LOOKBACK_MINUTES = int(os.getenv("SILVER_CHECKPOINT_LOOKBACK_MINUTES", "0"))
+USE_SILVER_INGEST_TS = os.getenv("USE_SILVER_INGEST_TS", "true").lower() == "true"
+
 # ------------------------------------------------------------------------------
 # History fields
 # ------------------------------------------------------------------------------
@@ -106,6 +115,12 @@ HISTORY_EXTRA_FIELDS = [
     StructField("change_ts", TimestampType(), True),
 ]
 HISTORY_FIELDS = TARGET_FIELDS + HISTORY_EXTRA_FIELDS
+
+CHECKPOINT_FIELDS = [
+    StructField("source_system", StringType(), False),
+    StructField("last_ingest_ts", TimestampType(), True),
+    StructField("updated_at", TimestampType(), True),
+]
 
 # ------------------------------------------------------------------------------
 # Simple in-memory caches (with TTL) to avoid re-reading on every micro-batch
@@ -196,6 +211,52 @@ def _coerce_ingest_ts(df):
     if field is not None and isinstance(field.dataType, TimestampType):
         return df
     return df.withColumn("ingest_ts", _parse_ingest_ts("ingest_ts"))
+
+
+def _ensure_checkpoint_table():
+    if spark.catalog.tableExists(SILVER_CHECKPOINT_TABLE):
+        return
+    schema = StructType(CHECKPOINT_FIELDS)
+    schema_df = spark.createDataFrame([], schema=schema)
+    schema_df.writeTo(SILVER_CHECKPOINT_TABLE).create()
+
+
+def _get_checkpoint(source_system: str):
+    if not spark.catalog.tableExists(SILVER_CHECKPOINT_TABLE):
+        return None
+    rows = (
+        spark.table(SILVER_CHECKPOINT_TABLE)
+        .filter(F.col("source_system") == source_system)
+        .select("last_ingest_ts")
+        .take(1)
+    )
+    return rows[0][0] if rows else None
+
+
+def _update_checkpoint(source_system: str, max_ingest_ts):
+    if max_ingest_ts is None:
+        return
+    try:
+        _ensure_checkpoint_table()
+    except Exception as exc:
+        print(f"[WARN] Failed to ensure silver checkpoint table: {exc}")
+        return
+    now_ts = datetime.now(timezone.utc)
+    cp_df = spark.createDataFrame(
+        [(source_system, max_ingest_ts, now_ts)],
+        ["source_system", "last_ingest_ts", "updated_at"]
+    )
+    cp_df.createOrReplaceTempView("silver_cp_updates")
+    spark.sql(f"""
+        MERGE INTO {SILVER_CHECKPOINT_TABLE} c
+        USING silver_cp_updates u
+        ON c.source_system = u.source_system
+        WHEN MATCHED THEN
+          UPDATE SET last_ingest_ts = u.last_ingest_ts, updated_at = u.updated_at
+        WHEN NOT MATCHED THEN
+          INSERT (source_system, last_ingest_ts, updated_at)
+          VALUES (u.source_system, u.last_ingest_ts, u.updated_at)
+    """)
 
 
 def merge_history_with_retry(
@@ -509,9 +570,20 @@ def process_source(source_name, input_table, current_table, history_table, norma
         raise ValueError(
             f"Input table {input_table} missing required columns: {sorted(missing_cols)}"
         )
+    raw_df = _coerce_ingest_ts(raw_df)
+
+    # Optional incremental filter using ingest_ts checkpoints
+    if USE_SILVER_INGEST_TS and "ingest_ts" in raw_df.columns:
+        last_ts = _get_checkpoint(source_name)
+        if last_ts is not None:
+            start_ts = last_ts - timedelta(minutes=SILVER_CHECKPOINT_LOOKBACK_MINUTES)
+            raw_df = raw_df.filter(col("ingest_ts") > lit(start_ts))
+
     raw_count = raw_df.count()
     print(f"[INFO] {source_name}: rows read from {input_table} = {raw_count}")
-    raw_df = _coerce_ingest_ts(raw_df)
+    if raw_count == 0:
+        print(f"[INFO] No new rows for {source_name}")
+        return
     normalized = normalize_fn(raw_df)
 
     if normalized.rdd.isEmpty():
@@ -551,6 +623,9 @@ def process_source(source_name, input_table, current_table, history_table, norma
                 materialized=True
             )
             merge_with_retry(conformed, current_table, materialized=True)
+            if USE_SILVER_INGEST_TS and "ingest_ts" in raw_df.columns:
+                max_ts = raw_df.agg(F.max("ingest_ts")).collect()[0][0]
+                _update_checkpoint(source_name, max_ts)
         finally:
             conformed.unpersist()
     except Exception as e:

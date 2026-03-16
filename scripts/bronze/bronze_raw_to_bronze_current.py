@@ -69,7 +69,8 @@ CHECKPOINT_TABLE = os.getenv(
     "BRONZE_CURRENT_CHECKPOINT_TABLE",
     "iceberg.bronze_current.bronze_current_checkpoint"
 )
-CHECKPOINT_LOOKBACK_MINUTES = int(os.getenv("CHECKPOINT_LOOKBACK_MINUTES", "5"))
+# POC default: no lookback for speed. For production, set to ~5 minutes.
+CHECKPOINT_LOOKBACK_MINUTES = int(os.getenv("CHECKPOINT_LOOKBACK_MINUTES", "0"))
 USE_INGEST_TS = os.getenv("USE_INGEST_TS", "true").lower() == "true"
 
 # ------------------------------------------------------------------------------
