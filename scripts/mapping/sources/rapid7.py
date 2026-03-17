@@ -1,6 +1,6 @@
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, lit, to_json, struct, concat_ws, lower, trim, sha2
-from pyspark.sql.types import ArrayType, StringType
+from pyspark.sql.types import ArrayType, StructType, StringType
 
 from mapping.target import (
     add_common_fields,
@@ -17,16 +17,81 @@ from mapping.target import (
 RAPID7_TOPIC = "rapid7.assets.raw"
 
 
+def _array_string_field(
+    df,
+    field_name: str,
+    nested_key: str | None = None,
+    allow_raw_string_fallback: bool = False,
+):
+    field = next((f for f in df.schema.fields if f.name == field_name), None)
+    if field is None or not isinstance(field.dataType, ArrayType):
+        return lit(None).cast("array<string>")
+
+    array_col = col(field_name)
+    if not nested_key:
+        return clean_string_array(array_col.cast("array<string>"))
+
+    element_type = field.dataType.elementType
+    if isinstance(element_type, StructType):
+        field_names = {f.name for f in element_type.fields}
+        if nested_key in field_names:
+            nested_values = F.transform(array_col, lambda x: x.getField(nested_key))
+            return clean_string_array(nested_values)
+        return lit(None).cast("array<string>")
+
+    if isinstance(element_type, StringType):
+        extracted_from_json = clean_string_array(
+            F.transform(array_col, lambda x: F.get_json_object(x, f"$.{nested_key}"))
+        )
+        if allow_raw_string_fallback:
+            raw_values = clean_string_array(array_col)
+            return F.when(
+                extracted_from_json.isNotNull() & (F.size(extracted_from_json) > 0),
+                extracted_from_json,
+            ).otherwise(raw_values)
+        return extracted_from_json
+
+    # Last-resort fallback for unexpected array element types.
+    as_json = F.to_json(array_col)
+    as_structs = F.from_json(as_json, f"array<struct<{nested_key}:string>>")
+    return clean_string_array(F.transform(as_structs, lambda x: x.getField(nested_key)))
+
+
 def normalize_rapid7(df):
     rapid7_clean = drop_corrupt_if_present(df)
 
-    address_ips = F.expr("transform(addresses, x -> x.ip)")
-    address_macs = F.expr("transform(addresses, x -> x.mac)")
-    hostnames_from_array = F.expr("transform(hostNames, x -> x.name)")
+    address_ips = _array_string_field(rapid7_clean, "addresses", "ip")
+    address_macs = _array_string_field(rapid7_clean, "addresses", "mac")
+    hostnames_from_array = _array_string_field(
+        rapid7_clean,
+        "hostNames",
+        "name",
+        allow_raw_string_fallback=True,
+    )
 
-    all_ips = clean_string_array(F.array_union(F.array(col("ip")), address_ips))
-    all_macs = clean_string_array(F.array_union(F.array(col("mac")), address_macs))
-    all_hostnames = clean_string_array(F.array_union(F.array(col("hostName")), hostnames_from_array))
+    empty_str_array = F.array().cast("array<string>")
+    primary_ip_array = clean_string_array(F.array(col("ip")))
+    primary_mac_array = clean_string_array(F.array(col("mac")))
+    primary_hostname_array = clean_string_array(F.array(col("hostName")))
+
+    all_ips = clean_string_array(
+        F.array_union(
+            F.coalesce(primary_ip_array, empty_str_array),
+            F.coalesce(address_ips, empty_str_array),
+        )
+    )
+    all_macs = clean_string_array(
+        F.array_union(
+            F.coalesce(primary_mac_array, empty_str_array),
+            F.coalesce(address_macs, empty_str_array),
+        )
+    )
+    all_hostnames = clean_string_array(
+        F.array_union(
+            F.coalesce(primary_hostname_array, empty_str_array),
+            F.coalesce(hostnames_from_array, empty_str_array),
+        )
+    )
 
     site_name_raw = col("site_name").cast("string")
     normalised_org = normalize_org_name(site_name_raw)
@@ -78,7 +143,7 @@ def normalize_rapid7(df):
         .withColumn("posture_firewall_enabled", lit(None).cast("boolean"))
         .withColumn("posture_network_quarantine_enabled", lit(None).cast("boolean"))
         .withColumn("posture_active_threats", lit(None).cast("int"))
-        .withColumn("tags", lit(None).cast(ArrayType(StringType())))
+        .withColumn("tags", lit(None).cast("array<string>"))
         .withColumn("site_id", clean_string(col("site_id").cast("string")))
         .withColumn("site_name", clean_string(site_name_raw))
         .withColumn("normalised_org_name", normalised_org)
@@ -90,7 +155,7 @@ def normalize_rapid7(df):
         .withColumn("rapid7_primary_mac", clean_string(col("mac")))
         .withColumn("rapid7_ip_addresses", all_ips)
         .withColumn("rapid7_mac_addresses", all_macs)
-        .withColumn("rapid7_hostnames", all_hostnames)
+        .withColumn("rapid7_hostnames", col("hostnames"))
         .withColumn("rapid7_os_certainty", col("osCertainty").cast("double"))
         .withColumn("rapid7_assessed_for_policies", col("assessedForPolicies"))
         .withColumn("rapid7_assessed_for_vulnerabilities", col("assessedForVulnerabilities"))
