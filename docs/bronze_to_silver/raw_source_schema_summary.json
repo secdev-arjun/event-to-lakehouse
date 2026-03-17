@@ -1,0 +1,117 @@
+{
+  "version": "2026-03-16",
+  "scope": "prod__bronze raw source schemas",
+  "tables": [
+    {
+      "name": "prod__bronze.prod__sentinelone__agents",
+      "describe_field_count": 86,
+      "identity_candidates": ["id", "uuid", "externalId"],
+      "site_fields": ["siteId", "siteName", "accountId", "accountName"],
+      "time_fields": [
+        "createdAt",
+        "firstFullModeTime",
+        "fullDiskScanLastUpdatedAt",
+        "lastActiveDate",
+        "lastSuccessfulScanDate",
+        "registeredAt",
+        "scanAbortedAt",
+        "scanFinishedAt",
+        "scanStartedAt",
+        "updatedAt",
+        "ingest_ts"
+      ],
+      "network_fields": [
+        "externalIp",
+        "lastIpToMgmt",
+        "groupIp",
+        "networkInterfaces",
+        "domain"
+      ],
+      "risk_posture_fields": [
+        "activeThreats",
+        "infected",
+        "firewallEnabled",
+        "networkQuarantineEnabled",
+        "mitigationMode",
+        "detectionState",
+        "isActive"
+      ],
+      "deep_nested_fields": [
+        "activeDirectory",
+        "locations",
+        "networkInterfaces",
+        "proxyStates",
+        "tags"
+      ]
+    },
+    {
+      "name": "prod__bronze.prod__rapid7__assets",
+      "describe_field_count": 26,
+      "identity_candidates": ["id", "ip", "hostName", "mac"],
+      "site_fields": ["site_id", "site_name"],
+      "time_fields": ["history[].date", "ingest_ts"],
+      "network_fields": ["ip", "addresses", "hostNames", "mac"],
+      "risk_posture_fields": [
+        "riskScore",
+        "rawRiskScore",
+        "assessedForPolicies",
+        "assessedForVulnerabilities",
+        "vulnerabilities"
+      ],
+      "deep_nested_fields": [
+        "files",
+        "history",
+        "hostNames",
+        "ids",
+        "links",
+        "osFingerprint",
+        "services",
+        "software",
+        "userGroups",
+        "users",
+        "vulnerabilities"
+      ]
+    },
+    {
+      "name": "prod__bronze.prod__fortisiem__devices",
+      "describe_field_count": 39,
+      "identity_candidates": ["naturalId", "name", "accessIp"],
+      "site_fields": ["organization.attr_id", "organization.attr_name"],
+      "time_fields": [
+        "discoverTime",
+        "softwarePatches[].installTime",
+        "softwarePatches[].installTimeInSec",
+        "systemUpTime",
+        "ingest_ts"
+      ],
+      "network_fields": ["accessIp", "interfaces"],
+      "risk_posture_fields": ["approved", "unmanaged", "status", "deviceStatus"],
+      "deep_nested_fields": [
+        "organization",
+        "applications",
+        "components",
+        "deviceType",
+        "eventParserList",
+        "interfaces",
+        "properties",
+        "softwarePatches",
+        "softwareServices"
+      ]
+    }
+  ],
+  "design_priorities": [
+    "Define deterministic source identity hierarchy per table before silver normalization.",
+    "Standardize timestamp parsing strategy across string and epoch bigint fields.",
+    "Keep deeply nested inventory payloads out of canonical silver/gold hashes unless explicitly required.",
+    "Treat Rapid7 vulnerability and risk metrics as primary risk source when available.",
+    "Build explicit cross-source matching keys using normalized site + ip/hostname fallbacks."
+  ],
+  "references": [
+    "docs/bronze_to_silver/raw_source_schemas.md",
+    "docs/bronze_to_silver/raw_prod_bronze_describe_output.txt",
+    "docs/bronze_to_silver/mappings_and_rules.md",
+    "docs/bronze_to_silver/normalized_schema.md",
+    "docs/silver_to_gold/gold_mappings_and_survivorship.md"
+  ]
+}
+

@@ -10,6 +10,7 @@ from urllib import request as urlrequest
 
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+from pyspark.sql.window import Window
 from pyspark.sql.types import (
     ArrayType,
     BooleanType,
@@ -40,7 +41,7 @@ os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 
 GOLD_TABLE = os.getenv("GOLD_TABLE", "iceberg.gold.assets_current")
 
-RP360_BASE_URL = os.getenv("RP360_BASE_URL", "http://172.16.232.51:8000/")
+RP360_BASE_URL = os.getenv("RP360_BASE_URL", "http://172.16.232.51:4000/")
 RP360_USERNAME = os.getenv("RP360_USERNAME", "admin")
 RP360_PASSWORD = os.getenv("RP360_PASSWORD", "admin")
 RP360_TIMEOUT_SECONDS = int(os.getenv("RP360_TIMEOUT_SECONDS", "30"))
@@ -63,7 +64,7 @@ DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
 
 REQUIRED_FIELDS = ["gold_asset_id", "gold_payload_hash"]
 UNIQUE_CONSTRAINTS = [["gold_asset_id"]]
-FORCED_EXCLUDED_FIELDS = {"raw_json"}
+FORCED_EXCLUDED_FIELDS = {"raw_json", "raw_payload"}
 EXCLUDED_FIELDS = FORCED_EXCLUDED_FIELDS.union(
     {f.strip() for f in os.getenv("RP360_EXCLUDED_FIELDS", "").split(",") if f.strip()}
 )
@@ -435,6 +436,30 @@ def ensure_table_with_schema(table_name: str, schema: StructType) -> None:
         spark.sql(f"ALTER TABLE {table_name} ADD COLUMNS ({cols_sql})")
 
 
+def dedupe_by_gold_asset_id(df):
+    if "gold_asset_id" not in df.columns:
+        return df
+
+    order_exprs = []
+    if "_rp360_ci_id" in df.columns:
+        order_exprs.append(
+            F.when(F.col("_rp360_ci_id").isNotNull(), F.lit(1)).otherwise(F.lit(0)).desc()
+        )
+    for col_name in ("source_updated_at", "last_seen_at", "ingest_ts", "first_seen_at"):
+        if col_name in df.columns:
+            order_exprs.append(F.col(col_name).desc_nulls_last())
+    if not order_exprs:
+        order_exprs = [F.lit(1)]
+
+    w = Window.partitionBy("gold_asset_id").orderBy(*order_exprs)
+    return (
+        df.filter(F.col("gold_asset_id").isNotNull())
+        .withColumn("_rn_asset", F.row_number().over(w))
+        .filter(F.col("_rn_asset") == 1)
+        .drop("_rn_asset")
+    )
+
+
 def compute_delta_df(gold_table: str, state_table: str):
     if not spark.catalog.tableExists(gold_table):
         raise ValueError(f"Gold table not found: {gold_table}")
@@ -448,7 +473,9 @@ def compute_delta_df(gold_table: str, state_table: str):
         )
 
     if not spark.catalog.tableExists(state_table):
-        return gold_df.withColumn("_rp360_ci_id", F.lit(None).cast("string"))
+        return dedupe_by_gold_asset_id(
+            gold_df.withColumn("_rp360_ci_id", F.lit(None).cast("string"))
+        )
 
     state_df = (
         spark.table(state_table)
@@ -463,7 +490,8 @@ def compute_delta_df(gold_table: str, state_table: str):
         | (F.col("s.status").isNull())
         | (F.col("s.status") != F.lit("success"))
     )
-    return delta.select("g.*", F.col("s.rp360_ci_id").alias("_rp360_ci_id"))
+    delta = delta.select("g.*", F.col("s.rp360_ci_id").alias("_rp360_ci_id"))
+    return dedupe_by_gold_asset_id(delta)
 
 
 def merge_state_updates(rows: List[Tuple[str, str, Optional[str], datetime, str, str]]) -> None:
@@ -479,6 +507,18 @@ def merge_state_updates(rows: List[Tuple[str, str, Optional[str], datetime, str,
             "status",
             "last_error",
         ],
+    )
+    updates_df = updates_df.filter(F.col("gold_asset_id").isNotNull())
+    status_rank = F.when(F.col("status") == F.lit("success"), F.lit(1)).otherwise(F.lit(0))
+    w = Window.partitionBy("gold_asset_id").orderBy(
+        status_rank.desc(),
+        F.col("synced_at").desc_nulls_last(),
+    )
+    updates_df = (
+        updates_df
+        .withColumn("_rn_state", F.row_number().over(w))
+        .filter(F.col("_rn_state") == 1)
+        .drop("_rn_state")
     )
     updates_df.createOrReplaceTempView("rp360_sync_state_updates")
     spark.sql(
@@ -571,6 +611,7 @@ def main() -> None:
         row_dict = row.asDict(recursive=True)
         hinted_ci_id = row_dict.pop("_rp360_ci_id", None)
         row_dict.pop("raw_json", None)
+        row_dict.pop("raw_payload", None)
 
         gold_asset_id = str(row_dict.get("gold_asset_id")) if row_dict.get("gold_asset_id") is not None else None
         gold_payload_hash = str(row_dict.get("gold_payload_hash")) if row_dict.get("gold_payload_hash") is not None else ""
@@ -645,7 +686,7 @@ def main() -> None:
                 "data": {
                     k: _to_jsonable(v)
                     for k, v in row_dict.items()
-                    if k not in {"_rp360_ci_id", "raw_json"}
+                    if k not in {"_rp360_ci_id", "raw_json", "raw_payload"}
                 },
             }
             error_rows.append((gold_asset_id, err_text, json.dumps(fallback_payload, default=str), now_ts))

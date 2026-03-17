@@ -520,7 +520,10 @@ def apply_rules(col_expr, rules):
         elif op == "array_sort":
             expr = F.array_sort(expr)
         elif op == "array_filter_nulls":
-            expr = F.filter(expr, lambda x: x.isNotNull())
+            expr = F.filter(
+                expr,
+                lambda x: x.isNotNull() & (F.length(F.trim(x.cast("string"))) > 0)
+            )
         elif op == "to_timestamp":
             expr = F.to_timestamp(expr, rule.get("format"))
         else:
