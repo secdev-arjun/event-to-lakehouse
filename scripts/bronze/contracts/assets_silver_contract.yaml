@@ -680,6 +680,54 @@
       "type": "string",
       "nullable": true
     },
+    "rapid7_site_description": {
+      "type": "string",
+      "nullable": true
+    },
+    "rapid7_site_importance": {
+      "type": "string",
+      "nullable": true
+    },
+    "rapid7_site_last_scan_time": {
+      "type": "string",
+      "nullable": true
+    },
+    "rapid7_site_risk_score": {
+      "type": "double",
+      "nullable": true
+    },
+    "rapid7_site_scan_engine": {
+      "type": "long",
+      "nullable": true
+    },
+    "rapid7_site_scan_template": {
+      "type": "string",
+      "nullable": true
+    },
+    "rapid7_site_type": {
+      "type": "string",
+      "nullable": true
+    },
+    "rapid7_site_assets": {
+      "type": "long",
+      "nullable": true
+    },
+    "rapid7_site_vuln_total": {
+      "type": "long",
+      "nullable": true
+    },
+    "rapid7_site_vuln_critical": {
+      "type": "long",
+      "nullable": true
+    },
+    "rapid7_site_vuln_severe": {
+      "type": "long",
+      "nullable": true
+    },
+    "rapid7_site_vuln_moderate": {
+      "type": "long",
+      "nullable": true
+    },
     "rapid7_primary_mac": {
       "type": "string",
       "nullable": true

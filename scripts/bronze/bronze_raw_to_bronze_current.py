@@ -37,9 +37,24 @@ spark.conf.set("spark.sql.files.ignoreCorruptFiles", "true")
 # Config
 # ------------------------------------------------------------------------------
 
-RAPID7_BRONZE_TABLE = os.getenv("RAPID7_BRONZE_TABLE", "iceberg.bronze.rapid7__assets__raw")
-FORTI_BRONZE_TABLE = os.getenv("FORTI_BRONZE_TABLE", "iceberg.bronze.fortisiem__device__raw")
-SENTINEL_BRONZE_TABLE = os.getenv("SENTINEL_BRONZE_TABLE", "iceberg.bronze.sentinalone__agents__raw")
+RAPID7_BRONZE_TABLE = os.getenv(
+    "RAPID7_BRONZE_TABLE", "iceberg.sample__data.prod__rapid7__assets"
+)
+FORTI_BRONZE_TABLE = os.getenv(
+    "FORTI_BRONZE_TABLE", "iceberg.sample__data.prod__fortisiem__devices"
+)
+SENTINEL_BRONZE_TABLE = os.getenv(
+    "SENTINEL_BRONZE_TABLE", "iceberg.sample__data.prod__sentinelone__agents"
+)
+RAPID7_SITE_BRONZE_TABLE = os.getenv(
+    "RAPID7_SITE_BRONZE_TABLE", "iceberg.sample__data.prod__rapid7__site"
+)
+FORTI_ORG_BRONZE_TABLE = os.getenv(
+    "FORTI_ORG_BRONZE_TABLE", "iceberg.sample__data.prod__fortisiem__organization"
+)
+SENTINEL_SITE_BRONZE_TABLE = os.getenv(
+    "SENTINEL_SITE_BRONZE_TABLE", "iceberg.sample__data.prod__sentinelone__site"
+)
 
 RAPID7_CURRENT_TABLE = os.getenv(
     "RAPID7_CURRENT_TABLE",
@@ -53,11 +68,26 @@ SENTINEL_CURRENT_TABLE = os.getenv(
     "SENTINEL_CURRENT_TABLE",
     "iceberg.bronze_current.sentinalone__agents__current"
 )
+RAPID7_SITE_CURRENT_TABLE = os.getenv(
+    "RAPID7_SITE_CURRENT_TABLE",
+    "iceberg.bronze_current.rapid7__site__current"
+)
+FORTI_ORG_CURRENT_TABLE = os.getenv(
+    "FORTI_ORG_CURRENT_TABLE",
+    "iceberg.bronze_current.fortisiem__organization__current"
+)
+SENTINEL_SITE_CURRENT_TABLE = os.getenv(
+    "SENTINEL_SITE_CURRENT_TABLE",
+    "iceberg.bronze_current.sentinelone__site__current"
+)
 
 ENTITY_ID_CONFIG_DEFAULTS = {
     "rapid7__assets": {"fields": ["id"]},
     "sentinalone__agents": {"fields": ["id"]},
     "fortisiem__device": {"fields": ["naturalId"]},
+    "rapid7__site": {"fields": ["name"]},
+    "fortisiem__organization": {"fields": ["name"]},
+    "sentinelone__site": {"fields": ["name"]},
 }
 ENTITY_ID_DELIMITER = "__"
 ENTITY_ID_NULL_TOKEN = "<null>"
@@ -376,6 +406,27 @@ def main():
         "sentinalone__agents",
         SENTINEL_BRONZE_TABLE,
         SENTINEL_CURRENT_TABLE,
+        entity_id_config,
+    )
+    _process_source(
+        "rapid7_site",
+        "rapid7__site",
+        RAPID7_SITE_BRONZE_TABLE,
+        RAPID7_SITE_CURRENT_TABLE,
+        entity_id_config,
+    )
+    _process_source(
+        "fortisiem_org",
+        "fortisiem__organization",
+        FORTI_ORG_BRONZE_TABLE,
+        FORTI_ORG_CURRENT_TABLE,
+        entity_id_config,
+    )
+    _process_source(
+        "sentinelone_site",
+        "sentinelone__site",
+        SENTINEL_SITE_BRONZE_TABLE,
+        SENTINEL_SITE_CURRENT_TABLE,
         entity_id_config,
     )
 

@@ -57,8 +57,62 @@ def _array_string_field(
     return clean_string_array(F.transform(as_structs, lambda x: x.getField(nested_key)))
 
 
-def normalize_rapid7(df):
+def _site_join_key(col_expr):
+    return F.lower(F.trim(col_expr.cast("string")))
+
+
+def normalize_rapid7(df, rapid7_site_df=None):
     rapid7_clean = drop_corrupt_if_present(df)
+
+    if rapid7_site_df is not None and "name" in rapid7_site_df.columns:
+        site_clean = drop_corrupt_if_present(rapid7_site_df)
+        site_enrichment = (
+            site_clean.withColumn("_site_name_join", _site_join_key(col("name")))
+            .filter(col("_site_name_join").isNotNull() & (col("_site_name_join") != ""))
+            .select(
+                col("_site_name_join"),
+                clean_string(col("name")).alias("_rapid7_site_lookup_name"),
+                clean_string(col("id").cast("string")).alias("_rapid7_site_lookup_id"),
+                clean_string(col("description")).alias("_rapid7_site_description"),
+                clean_string(col("importance")).alias("_rapid7_site_importance"),
+                clean_string(col("lastScanTime")).alias("_rapid7_site_last_scan_time"),
+                col("riskScore").cast("double").alias("_rapid7_site_risk_score"),
+                col("scanEngine").cast("long").alias("_rapid7_site_scan_engine"),
+                clean_string(col("scanTemplate")).alias("_rapid7_site_scan_template"),
+                clean_string(col("type")).alias("_rapid7_site_type"),
+                col("assets").cast("long").alias("_rapid7_site_assets"),
+                col("vulnerabilities.total").cast("long").alias("_rapid7_site_vuln_total"),
+                col("vulnerabilities.critical").cast("long").alias("_rapid7_site_vuln_critical"),
+                col("vulnerabilities.severe").cast("long").alias("_rapid7_site_vuln_severe"),
+                col("vulnerabilities.moderate").cast("long").alias("_rapid7_site_vuln_moderate"),
+            )
+            .dropDuplicates(["_site_name_join"])
+        )
+        rapid7_clean = (
+            rapid7_clean.withColumn("_site_name_join", _site_join_key(col("site_name")))
+            .join(site_enrichment, on="_site_name_join", how="left")
+            .drop("_site_name_join")
+        )
+
+    site_intermediate_defaults = {
+        "_rapid7_site_lookup_name": "string",
+        "_rapid7_site_lookup_id": "string",
+        "_rapid7_site_description": "string",
+        "_rapid7_site_importance": "string",
+        "_rapid7_site_last_scan_time": "string",
+        "_rapid7_site_risk_score": "double",
+        "_rapid7_site_scan_engine": "long",
+        "_rapid7_site_scan_template": "string",
+        "_rapid7_site_type": "string",
+        "_rapid7_site_assets": "long",
+        "_rapid7_site_vuln_total": "long",
+        "_rapid7_site_vuln_critical": "long",
+        "_rapid7_site_vuln_severe": "long",
+        "_rapid7_site_vuln_moderate": "long",
+    }
+    for col_name, dtype in site_intermediate_defaults.items():
+        if col_name not in rapid7_clean.columns:
+            rapid7_clean = rapid7_clean.withColumn(col_name, lit(None).cast(dtype))
 
     address_ips = _array_string_field(rapid7_clean, "addresses", "ip")
     address_macs = _array_string_field(rapid7_clean, "addresses", "mac")
@@ -150,8 +204,32 @@ def normalize_rapid7(df):
         .withColumn("account_name", lit(None).cast("string"))
         .withColumn("org_map_matched", org_map_matched(col("site_name"), col("normalised_org_name")))
         .withColumn("rapid7_asset_id", col("id").cast("string"))
-        .withColumn("rapid7_site_id", clean_string(col("site_id").cast("string")))
-        .withColumn("rapid7_site_name", clean_string(site_name_raw))
+        .withColumn(
+            "rapid7_site_id",
+            F.coalesce(
+                clean_string(col("site_id").cast("string")),
+                clean_string(col("_rapid7_site_lookup_id")),
+            ),
+        )
+        .withColumn(
+            "rapid7_site_name",
+            F.coalesce(
+                clean_string(site_name_raw),
+                clean_string(col("_rapid7_site_lookup_name")),
+            ),
+        )
+        .withColumn("rapid7_site_description", clean_string(col("_rapid7_site_description")))
+        .withColumn("rapid7_site_importance", clean_string(col("_rapid7_site_importance")))
+        .withColumn("rapid7_site_last_scan_time", clean_string(col("_rapid7_site_last_scan_time")))
+        .withColumn("rapid7_site_risk_score", col("_rapid7_site_risk_score").cast("double"))
+        .withColumn("rapid7_site_scan_engine", col("_rapid7_site_scan_engine").cast("long"))
+        .withColumn("rapid7_site_scan_template", clean_string(col("_rapid7_site_scan_template")))
+        .withColumn("rapid7_site_type", clean_string(col("_rapid7_site_type")))
+        .withColumn("rapid7_site_assets", col("_rapid7_site_assets").cast("long"))
+        .withColumn("rapid7_site_vuln_total", col("_rapid7_site_vuln_total").cast("long"))
+        .withColumn("rapid7_site_vuln_critical", col("_rapid7_site_vuln_critical").cast("long"))
+        .withColumn("rapid7_site_vuln_severe", col("_rapid7_site_vuln_severe").cast("long"))
+        .withColumn("rapid7_site_vuln_moderate", col("_rapid7_site_vuln_moderate").cast("long"))
         .withColumn("rapid7_primary_mac", clean_string(col("mac")))
         .withColumn("rapid7_ip_addresses", all_ips)
         .withColumn("rapid7_mac_addresses", all_macs)

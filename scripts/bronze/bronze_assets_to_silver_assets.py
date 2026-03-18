@@ -59,6 +59,10 @@ SENTINEL_BRONZE_CURRENT_TABLE = os.getenv(
     "SENTINEL_BRONZE_CURRENT_TABLE",
     "iceberg.bronze_current.sentinalone__agents__current"
 )
+RAPID7_SITE_CURRENT_TABLE = os.getenv(
+    "RAPID7_SITE_CURRENT_TABLE",
+    "iceberg.bronze_current.rapid7__site__current"
+)
 
 # Output: silver current + history per source
 RAPID7_SILVER_CURRENT_TABLE = os.getenv(
@@ -637,13 +641,21 @@ def process_source(source_name, input_table, current_table, history_table, norma
 
 def main():
     contract = load_contract_cached(CONFORMED_CONTRACT_PATH)
+    rapid7_site_df = None
+    if spark.catalog.tableExists(RAPID7_SITE_CURRENT_TABLE):
+        rapid7_site_df = _coerce_ingest_ts(spark.table(RAPID7_SITE_CURRENT_TABLE))
+    else:
+        print(
+            f"[WARN] Rapid7 site enrichment table not found: {RAPID7_SITE_CURRENT_TABLE}; "
+            "continuing without site enrichment."
+        )
 
     process_source(
         "rapid7",
         RAPID7_BRONZE_CURRENT_TABLE,
         RAPID7_SILVER_CURRENT_TABLE,
         RAPID7_SILVER_HISTORY_TABLE,
-        normalize_rapid7,
+        lambda raw_df: normalize_rapid7(raw_df, rapid7_site_df),
         contract,
     )
     process_source(
