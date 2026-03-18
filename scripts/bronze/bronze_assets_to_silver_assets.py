@@ -623,6 +623,12 @@ def process_source(source_name, input_table, current_table, history_table, norma
                 return
             conformed_count = conformed.count()
             print(f"[INFO] {source_name}: rows after conformance = {conformed_count}")
+            if "org_map_matched" in conformed.columns:
+                org_map_true_count = conformed.filter(col("org_map_matched") == lit(True)).count()
+                print(
+                    f"[INFO] {source_name}: org_map_matched=true rows = "
+                    f"{org_map_true_count}/{conformed_count} (informational)"
+                )
             merge_history_with_retry(
                 conformed,
                 current_table=current_table,

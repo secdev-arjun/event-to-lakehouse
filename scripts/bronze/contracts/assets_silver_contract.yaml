@@ -1,6 +1,52 @@
 {
   "source_table": "iceberg.silver.assets",
   "target_table": "iceberg.silver.assets_conformed",
+  "schema_policies": {
+    "prefix_exception_policy": "Source prefix is allowed only when the concept has no cross-source equivalent and the field name would otherwise be ambiguous or colliding.",
+    "no_unapproved_prefixes_test": {
+      "enabled": true,
+      "allowed_prefixes": [
+        "rapid7_",
+        "fortisiem_",
+        "sentinelone_"
+      ],
+      "allowed_prefixed_fields": []
+    },
+    "single_source_semantic_whitelist": [
+      "machine_type",
+      "ranger_status",
+      "mitigation_mode",
+      "mitigation_mode_suspicious",
+      "scan_status",
+      "operational_state",
+      "operational_state_expiration",
+      "network_status",
+      "group_id",
+      "group_name",
+      "last_logged_in_user_name",
+      "active_protection_modes",
+      "missing_permissions",
+      "user_actions_needed",
+      "location_names",
+      "device_status",
+      "discover_method",
+      "event_log_status",
+      "perf_mon_status",
+      "update_method",
+      "services_count",
+      "software_count"
+    ],
+    "org_map_matched_test": {
+      "mode": "informational",
+      "description": "Count is logged per source; zero is valid when names already match normalized output."
+    },
+    "gold_matching_exclusions": [
+      "gateway_mac_addresses",
+      "virtual_mac_addresses",
+      "site_id",
+      "source_site_ref_id"
+    ]
+  },
   "fields": {
     "schema_version": {
       "type": "string",
@@ -68,6 +114,242 @@
         },
         {
           "op": "lower"
+        }
+      ]
+    },
+    "source_record_id": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "source_natural_id": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "source_site_ref_id": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "source_display_name": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "asset_name": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "primary_hostname": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "hostnames": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "host_domain": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "primary_ip": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "ip_addresses": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "ip_addresses_raw": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "ipv6_addresses": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "primary_mac": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "mac_addresses": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "gateway_mac_addresses": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "virtual_mac_addresses": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "serial_number": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "access_ip": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "external_ip": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "approved": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "unmanaged": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "tags": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
         }
       ]
     },
@@ -149,15 +431,7 @@
         }
       ]
     },
-    "rapid7_id": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_id": {
-      "type": "string",
-      "nullable": true
-    },
-    "asset_name": {
+    "normalised_org_name": {
       "type": "string",
       "nullable": true,
       "rules": [
@@ -166,7 +440,7 @@
         }
       ]
     },
-    "primary_hostname": {
+    "account_id": {
       "type": "string",
       "nullable": true,
       "rules": [
@@ -175,7 +449,7 @@
         }
       ]
     },
-    "primary_ip": {
+    "account_name": {
       "type": "string",
       "nullable": true,
       "rules": [
@@ -184,25 +458,76 @@
         }
       ]
     },
-    "access_ip": {
-      "type": "string",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "trim"
-        }
-      ]
-    },
-    "natural_id": {
-      "type": "string",
-      "nullable": true
-    },
-    "approved": {
+    "org_map_matched": {
       "type": "boolean",
       "nullable": true
     },
-    "unmanaged": {
-      "type": "boolean",
+    "site_description": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "site_type": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "site_importance": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "site_assets_count": {
+      "type": "bigint",
+      "nullable": true
+    },
+    "site_risk_score": {
+      "type": "double",
+      "nullable": true
+    },
+    "site_last_scan_time": {
+      "type": "timestamp",
+      "nullable": true
+    },
+    "site_scan_engine": {
+      "type": "bigint",
+      "nullable": true
+    },
+    "site_scan_template": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "site_vuln_total": {
+      "type": "bigint",
+      "nullable": true
+    },
+    "site_vuln_critical": {
+      "type": "bigint",
+      "nullable": true
+    },
+    "site_vuln_severe": {
+      "type": "bigint",
+      "nullable": true
+    },
+    "site_vuln_moderate": {
+      "type": "bigint",
       "nullable": true
     },
     "device_vendor": {
@@ -224,6 +549,24 @@
       ]
     },
     "device_version": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "platform_version": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "asset_type": {
       "type": "string",
       "nullable": true,
       "rules": [
@@ -321,8 +664,29 @@
         }
       ]
     },
+    "os_edition": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
     "os_certainty": {
       "type": "double",
+      "nullable": true
+    },
+    "cpu_count": {
+      "type": "int",
+      "nullable": true
+    },
+    "memory_bytes": {
+      "type": "bigint",
+      "nullable": true
+    },
+    "system_uptime": {
+      "type": "bigint",
       "nullable": true
     },
     "assessed_for_policies": {
@@ -372,47 +736,6 @@
       "type": "int",
       "nullable": true
     },
-    "host_domain": {
-      "type": "string",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "trim"
-        }
-      ]
-    },
-    "ip_addresses": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "external_ip": {
-      "type": "string",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "trim"
-        }
-      ]
-    },
-    "cpu_count": {
-      "type": "int",
-      "nullable": true
-    },
-    "memory_bytes": {
-      "type": "bigint",
-      "nullable": true
-    },
     "posture_is_active": {
       "type": "boolean",
       "nullable": true
@@ -429,7 +752,106 @@
       "type": "int",
       "nullable": true
     },
-    "tags": {
+    "scan_status": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "operational_state": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "operational_state_expiration": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "network_status": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "ranger_status": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "mitigation_mode": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "mitigation_mode_suspicious": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "machine_type": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "group_id": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "group_name": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "last_logged_in_user_name": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "active_protection_modes": {
       "type": "array<string>",
       "nullable": true,
       "rules": [
@@ -443,6 +865,104 @@
           "op": "array_sort"
         }
       ]
+    },
+    "missing_permissions": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "user_actions_needed": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "location_names": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "device_status": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "discover_method": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "event_log_status": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "perf_mon_status": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "update_method": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "services_count": {
+      "type": "int",
+      "nullable": true
+    },
+    "software_count": {
+      "type": "int",
+      "nullable": true
     },
     "raw_payload": {
       "type": "string",
@@ -451,535 +971,6 @@
     "raw_json": {
       "type": "string",
       "nullable": true
-    },
-    "normalised_org_name": {
-      "type": "string",
-      "nullable": true
-    },
-    "account_name": {
-      "type": "string",
-      "nullable": true
-    },
-    "org_map_matched": {
-      "type": "boolean",
-      "nullable": true
-    },
-    "hostnames": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "primary_mac": {
-      "type": "string",
-      "nullable": true
-    },
-    "mac_addresses": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "serial_number": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_account_id": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_account_name": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_agent_version": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_machine_type": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_mitigation_mode": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_mitigation_mode_suspicious": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_scan_status": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_operational_state": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_operational_state_expiration": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_is_decommissioned": {
-      "type": "boolean",
-      "nullable": true
-    },
-    "sentinelone_firewall_enabled": {
-      "type": "boolean",
-      "nullable": true
-    },
-    "sentinelone_network_quarantine_enabled": {
-      "type": "boolean",
-      "nullable": true
-    },
-    "sentinelone_ranger_status": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_network_status": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_group_id": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_group_name": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_active_threats": {
-      "type": "int",
-      "nullable": true
-    },
-    "sentinelone_last_logged_in_user_name": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_serial_number": {
-      "type": "string",
-      "nullable": true
-    },
-    "sentinelone_ip_addresses": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "sentinelone_mac_addresses": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "sentinelone_active_protection": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "sentinelone_missing_permissions": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "sentinelone_user_actions_needed": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "sentinelone_locations": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "rapid7_asset_id": {
-      "type": "string",
-      "nullable": true
-    },
-    "rapid7_site_id": {
-      "type": "string",
-      "nullable": true
-    },
-    "rapid7_site_name": {
-      "type": "string",
-      "nullable": true
-    },
-    "rapid7_site_description": {
-      "type": "string",
-      "nullable": true
-    },
-    "rapid7_site_importance": {
-      "type": "string",
-      "nullable": true
-    },
-    "rapid7_site_last_scan_time": {
-      "type": "string",
-      "nullable": true
-    },
-    "rapid7_site_risk_score": {
-      "type": "double",
-      "nullable": true
-    },
-    "rapid7_site_scan_engine": {
-      "type": "long",
-      "nullable": true
-    },
-    "rapid7_site_scan_template": {
-      "type": "string",
-      "nullable": true
-    },
-    "rapid7_site_type": {
-      "type": "string",
-      "nullable": true
-    },
-    "rapid7_site_assets": {
-      "type": "long",
-      "nullable": true
-    },
-    "rapid7_site_vuln_total": {
-      "type": "long",
-      "nullable": true
-    },
-    "rapid7_site_vuln_critical": {
-      "type": "long",
-      "nullable": true
-    },
-    "rapid7_site_vuln_severe": {
-      "type": "long",
-      "nullable": true
-    },
-    "rapid7_site_vuln_moderate": {
-      "type": "long",
-      "nullable": true
-    },
-    "rapid7_primary_mac": {
-      "type": "string",
-      "nullable": true
-    },
-    "rapid7_ip_addresses": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "rapid7_mac_addresses": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "rapid7_hostnames": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "rapid7_os_certainty": {
-      "type": "double",
-      "nullable": true
-    },
-    "rapid7_assessed_for_policies": {
-      "type": "boolean",
-      "nullable": true
-    },
-    "rapid7_assessed_for_vulnerabilities": {
-      "type": "boolean",
-      "nullable": true
-    },
-    "rapid7_risk_score": {
-      "type": "double",
-      "nullable": true
-    },
-    "rapid7_raw_risk_score": {
-      "type": "double",
-      "nullable": true
-    },
-    "rapid7_vuln_total": {
-      "type": "int",
-      "nullable": true
-    },
-    "rapid7_vuln_critical": {
-      "type": "int",
-      "nullable": true
-    },
-    "rapid7_vuln_severe": {
-      "type": "int",
-      "nullable": true
-    },
-    "rapid7_vuln_moderate": {
-      "type": "int",
-      "nullable": true
-    },
-    "rapid7_vuln_exploits": {
-      "type": "int",
-      "nullable": true
-    },
-    "rapid7_vuln_malware_kits": {
-      "type": "int",
-      "nullable": true
-    },
-    "rapid7_services_count": {
-      "type": "int",
-      "nullable": true
-    },
-    "rapid7_software_count": {
-      "type": "int",
-      "nullable": true
-    },
-    "rapid7_asset_type": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_device_id": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_natural_id": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_site_id": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_site_name": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_access_ip": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_primary_ip": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_ip_addresses": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "fortisiem_ipv6_addresses": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "fortisiem_mac_addresses": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
-    },
-    "fortisiem_primary_mac": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_hw_vendor": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_hw_model": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_hw_serial": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_bios": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_device_category": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_device_status": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_discover_method": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_event_log_status": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_perf_mon_status": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_system_uptime": {
-      "type": "bigint",
-      "nullable": true
-    },
-    "fortisiem_os_edition": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_version": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_update_method": {
-      "type": "string",
-      "nullable": true
-    },
-    "fortisiem_approved": {
-      "type": "boolean",
-      "nullable": true
-    },
-    "fortisiem_unmanaged": {
-      "type": "boolean",
-      "nullable": true
-    },
-    "sentinelone_gateway_mac_addresses": {
-      "type": "array<string>",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "array_filter_nulls"
-        },
-        {
-          "op": "array_distinct"
-        },
-        {
-          "op": "array_sort"
-        }
-      ]
     }
   }
 }
