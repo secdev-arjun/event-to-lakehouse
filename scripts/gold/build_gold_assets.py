@@ -1,7 +1,7 @@
 import os
 import sys
 
-from pyspark.sql import SparkSession, functions as F
+from pyspark.sql import SparkSession
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(SCRIPT_DIR)
@@ -17,6 +17,7 @@ from gold.config import (
 )
 from gold.readers import read_table
 from gold.matching import match_sources
+from gold.grouping import build_entity_groups
 from gold.survivorship import build_gold_rows
 from gold.writer import write_gold_current
 
@@ -25,10 +26,15 @@ spark = (
     SparkSession.builder
     .appName("Silver -> Gold Assets (POC)")
     .config("spark.executorEnv.PYTHONPATH", os.environ.get("PYTHONPATH", ""))
-    .config("spark.sql.shuffle.partitions", "4")
-    .config("spark.default.parallelism", "4")
+    .config("spark.sql.shuffle.partitions", "16")
+    .config("spark.default.parallelism", "16")
+    .config("spark.sql.autoBroadcastJoinThreshold", "67108864")
     .config("spark.sql.adaptive.enabled", "true")
     .config("spark.sql.adaptive.coalescePartitions.enabled", "true")
+    .config("spark.sql.adaptive.skewJoin.enabled", "true")
+    .config("spark.network.timeout", "600s")
+    .config("spark.executor.heartbeatInterval", "60s")
+    .config("spark.files.io.connectionTimeout", "600s")
     .getOrCreate()
 )
 
@@ -42,11 +48,34 @@ def main():
     rapid7_df = read_table(spark, RAPID7_SILVER_CURRENT_TABLE)
     forti_df = read_table(spark, FORTI_SILVER_CURRENT_TABLE)
 
-    joined = match_sources(sentinel_df, rapid7_df, forti_df)
-    gold_df = build_gold_rows(joined)
+    (
+        sentinel_prepared,
+        rapid7_prepared,
+        forti_prepared,
+        r7_fsm_pairs,
+        r7_s1_pairs,
+        fsm_s1_pairs,
+        all_pairs,
+    ) = match_sources(
+        sentinel_df, rapid7_df, forti_df
+    )
 
-    # Keep only cross-source matched assets (drop SentinelOne-only rows)
-    gold_df = gold_df.filter(F.col("seen_in_rapid7") | F.col("seen_in_fortisiem"))
+    groups = build_entity_groups(
+        rapid7_prepared,
+        forti_prepared,
+        sentinel_prepared,
+        r7_fsm_pairs,
+        r7_s1_pairs,
+        fsm_s1_pairs,
+    )
+
+    gold_df = build_gold_rows(
+        sentinel_prepared,
+        rapid7_prepared,
+        forti_prepared,
+        groups,
+        all_pairs,
+    )
 
     write_gold_current(gold_df, GOLD_ASSETS_CURRENT_TABLE)
 

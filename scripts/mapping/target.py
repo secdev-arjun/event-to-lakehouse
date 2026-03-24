@@ -266,7 +266,6 @@ TARGET_FIELDS = [
     StructField("user_actions_needed", ArrayType(StringType()), True),
     StructField("location_names", ArrayType(StringType()), True),
     StructField("device_status", StringType(), True),
-    StructField("discover_method", StringType(), True),
     StructField("event_log_status", StringType(), True),
     StructField("perf_mon_status", StringType(), True),
     StructField("update_method", StringType(), True),
