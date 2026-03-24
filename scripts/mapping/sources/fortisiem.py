@@ -13,7 +13,7 @@ from mapping.target import (
     clean_string,
     clean_string_array,
     normalize_mac_array,
-    normalize_org_name,
+    split_site_name_and_org,
     org_map_matched,
     first_array_value,
     filter_matching_ip_addresses,
@@ -129,9 +129,28 @@ def normalize_fortisiem(df):
 
     source_site_ref_id = clean_string(nested_col_if_exists(forti_clean, "organization.attr_id").cast("string"))
     site_name_raw = clean_string(nested_col_if_exists(forti_clean, "organization.attr_name").cast("string"))
-    normalised_org = normalize_org_name(site_name_raw)
+    mapped_site_name, normalised_org = split_site_name_and_org(site_name_raw)
 
     source_natural_id = clean_string(col("naturalId"))
+    device_vendor = clean_string(col("deviceType.vendor"))
+    device_model = clean_string(col("deviceType.model"))
+    device_version = clean_string(col("deviceType.version"))
+    platform_version = clean_string(col("version"))
+    os_edition = clean_string(col("osEdition"))
+    os_name = clean_string(
+        F.coalesce(
+            os_edition,
+            F.concat_ws(" ", device_vendor, device_model),
+        )
+    )
+    os_version = clean_string(F.coalesce(device_version, platform_version))
+    os_family_key = F.lower(F.coalesce(os_name, device_model, lit("")))
+    os_family = (
+        F.when(os_family_key.rlike(r"windows"), lit("Windows"))
+        .when(os_family_key.rlike(r"linux|ubuntu|debian|centos|red hat|rhel"), lit("Linux"))
+        .when(os_family_key.rlike(r"mac os|macos|os x"), lit("MacOS"))
+        .otherwise(lit(None).cast("string"))
+    )
 
     df = (
         forti_clean.withColumn("source", col("source"))
@@ -161,11 +180,11 @@ def normalize_fortisiem(df):
         .withColumn("unmanaged", col("unmanaged"))
         .withColumn("tags", lit(None).cast(ArrayType(StringType())))
         .withColumn("site_id", source_site_ref_id)
-        .withColumn("site_name", site_name_raw)
+        .withColumn("site_name", mapped_site_name)
         .withColumn("normalised_org_name", normalised_org)
         .withColumn("account_id", lit(None).cast("string"))
         .withColumn("account_name", lit(None).cast("string"))
-        .withColumn("org_map_matched", org_map_matched(col("site_name"), col("normalised_org_name")))
+        .withColumn("org_map_matched", org_map_matched(site_name_raw, col("normalised_org_name")))
         .withColumn("site_description", lit(None).cast("string"))
         .withColumn("site_type", lit(None).cast("string"))
         .withColumn("site_importance", lit(None).cast("string"))
@@ -178,18 +197,18 @@ def normalize_fortisiem(df):
         .withColumn("site_vuln_critical", lit(None).cast("long"))
         .withColumn("site_vuln_severe", lit(None).cast("long"))
         .withColumn("site_vuln_moderate", lit(None).cast("long"))
-        .withColumn("device_vendor", clean_string(col("deviceType.vendor")))
-        .withColumn("device_model", clean_string(col("deviceType.model")))
-        .withColumn("device_version", clean_string(col("deviceType.version")))
-        .withColumn("platform_version", clean_string(col("version")))
+        .withColumn("device_vendor", device_vendor)
+        .withColumn("device_model", device_model)
+        .withColumn("device_version", device_version)
+        .withColumn("platform_version", platform_version)
         .withColumn("asset_type", lit(None).cast("string"))
-        .withColumn("os_name", lit(None).cast("string"))
-        .withColumn("os_family", lit(None).cast("string"))
-        .withColumn("os_vendor", lit(None).cast("string"))
-        .withColumn("os_product", lit(None).cast("string"))
-        .withColumn("os_version", lit(None).cast("string"))
+        .withColumn("os_name", os_name)
+        .withColumn("os_family", os_family)
+        .withColumn("os_vendor", device_vendor)
+        .withColumn("os_product", device_model)
+        .withColumn("os_version", os_version)
         .withColumn("os_architecture", lit(None).cast("string"))
-        .withColumn("os_edition", clean_string(col("osEdition")))
+        .withColumn("os_edition", os_edition)
         .withColumn("os_certainty", lit(None).cast("double"))
         .withColumn("cpu_count", lit(None).cast("int"))
         .withColumn("memory_bytes", lit(None).cast("long"))

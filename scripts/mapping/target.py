@@ -17,6 +17,8 @@ ORG_NAME_NORMALIZATION_RULES = [
     (r"(?i)^cced windows quarter$", "CCED"),
     (r"(?i)^ccedorg$", "CCED"),
     (r"(?i)^cc energy development oman$", "CCED"),
+    (r"(?i)^abraj$", "Abraj"),
+    (r"(?i)^abraj[\s-]+.+$", "Abraj"),
     (r"(?i)^securado$", "Securado"),
     (r"(?i)^securado hq$", "Securado"),
     (r"(?i)^securado - hq$", "Securado"),
@@ -26,6 +28,42 @@ ORG_NAME_NORMALIZATION_RULES = [
     (r"(?i)^securado - head office$", "Securado"),
     (r"(?i)^securado head office$", "Securado"),
     (r"(?i)^securado-in$", "Securado"),
+]
+
+MANUAL_SITE_ORG_OVERRIDES = [
+    ("cced firewalls quarter", "CCED", "Firewall"),
+    ("cced scan assistant", "CCED", None),
+    ("ccedorg", "CCED", None),
+    ("cc energy development oman", "CCED", None),
+    ("cced sw quarter", "CCED", None),
+    ("cced windows quarter", "CCED", "Windows"),
+    ("mdc d2c scan assistant", "MDC", None),
+    ("mdc", "MDC", None),
+    ("mazoon dairy company saoc", "MDC", None),
+    ("mdc firewall va quarter", "MDC", "Firewall"),
+    ("mdc linux quarter", "MDC", "Linux"),
+    ("mdc switchs quarter", "MDC", "Switch"),
+    ("mdc test 2025", "MDC", None),
+    ("mdc-windows quarter", "MDC", "Windows"),
+    ("mog firewalls quarter", "MOG", "Firewall"),
+    ("mog linux quarter", "MOG", "Linux"),
+    ("mog switch quarter", "MOG", "Switch"),
+    ("mog troubleshooting", "MOG", None),
+    ("mog windows quarter", "MOG", "Windows"),
+    ("mog-discovery_for_all_assets", "MOG", None),
+    ("phoenix power network", "Phoenix Power", "Network"),
+    ("phoenix power server", "Phoenix Power", "Server"),
+    ("phoenixpower test", "Phoenix Power", None),
+    ("phoenixpower-blackbox", "Phoenix Power", None),
+    ("securado", "Securado", None),
+    ("securado-in", "Securado", None),
+    ("securado - all active ip discovery", "Securado", None),
+    ("securado discovry", "Securado", None),
+    ("securado-windows server", "Securado", "Windows"),
+    ("x-labs discovery", "Securado", None),
+    ("x-labs", "Securado", None),
+    ("x-labs testingr", "Securado", None),
+    ("x-labs-cis", "Securado", None),
 ]
 
 
@@ -113,6 +151,66 @@ def normalize_org_name(col_expr):
     for pattern, replacement in ORG_NAME_NORMALIZATION_RULES:
         expr = F.regexp_replace(expr, pattern, replacement)
     return clean_string(expr)
+
+
+def split_site_name_and_org(site_col_expr):
+    """
+    Manual site/org split rules for known naming conventions.
+    Returns a tuple of Columns: (site_name, normalised_org_name).
+
+    Fallback:
+    - site_name keeps the cleaned raw site value
+    - normalised_org_name uses normalize_org_name(raw_site_value)
+    """
+    raw_site = clean_string(site_col_expr)
+    site_name = raw_site
+    org_name = normalize_org_name(raw_site)
+
+    key = F.lower(F.trim(F.regexp_replace(F.coalesce(raw_site, lit("")), r"\s+", " ")))
+
+    manual_org_entries = []
+    manual_site_entries = []
+    for raw_key, mapped_org, mapped_site in MANUAL_SITE_ORG_OVERRIDES:
+        manual_org_entries.extend([lit(raw_key), lit(mapped_org).cast("string")])
+        manual_site_entries.extend([lit(raw_key), lit(mapped_site).cast("string")])
+
+    manual_org = F.element_at(F.create_map(*manual_org_entries), key)
+    manual_site = F.element_at(F.create_map(*manual_site_entries), key)
+    has_manual_mapping = manual_org.isNotNull()
+
+    site_name = F.when(has_manual_mapping, manual_site).otherwise(site_name)
+    org_name = F.when(has_manual_mapping, manual_org).otherwise(org_name)
+
+    # MOG-* / MOG * => org=MOG, site=<suffix>
+    mog_match = (~has_manual_mapping) & raw_site.rlike(r"(?i)^mog[\s-]+.+$")
+    mog_site = clean_string(F.regexp_extract(raw_site, r"(?i)^mog[\s-]+(.+)$", 1))
+    site_name = F.when(mog_match, mog_site).otherwise(site_name)
+    org_name = F.when(mog_match, lit("MOG")).otherwise(org_name)
+
+    # Securado exact => org=Securado, site=NULL
+    securado_exact = (~has_manual_mapping) & raw_site.rlike(r"(?i)^securado$")
+    site_name = F.when(securado_exact, lit(None).cast("string")).otherwise(site_name)
+    org_name = F.when(securado_exact, lit("Securado")).otherwise(org_name)
+
+    # Securado-* / Securado * => org=Securado, site=<suffix>
+    securado_match = (~has_manual_mapping) & raw_site.rlike(r"(?i)^securado[\s-]+.+$")
+    securado_site = clean_string(F.regexp_extract(raw_site, r"(?i)^securado[\s-]+(.+)$", 1))
+    site_name = F.when(securado_match, securado_site).otherwise(site_name)
+    org_name = F.when(securado_match, lit("Securado")).otherwise(org_name)
+
+    # X-Labs-* / X-Labs * => org=X-Labs, site=<suffix>
+    xlabs_match = (~has_manual_mapping) & raw_site.rlike(r"(?i)^x-labs[\s-]+.+$")
+    xlabs_site = clean_string(F.regexp_extract(raw_site, r"(?i)^x-labs[\s-]+(.+)$", 1))
+    site_name = F.when(xlabs_match, xlabs_site).otherwise(site_name)
+    org_name = F.when(xlabs_match, lit("X-Labs")).otherwise(org_name)
+
+    # Abraj-* / Abraj * => org=Abraj, site=<suffix>
+    abraj_match = (~has_manual_mapping) & raw_site.rlike(r"(?i)^abraj[\s-]+.+$")
+    abraj_site = clean_string(F.regexp_extract(raw_site, r"(?i)^abraj[\s-]+(.+)$", 1))
+    site_name = F.when(abraj_match, abraj_site).otherwise(site_name)
+    org_name = F.when(abraj_match, lit("Abraj")).otherwise(org_name)
+
+    return site_name, org_name
 
 
 

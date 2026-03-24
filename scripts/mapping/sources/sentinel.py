@@ -12,7 +12,7 @@ from mapping.target import (
     clean_string,
     clean_string_array,
     normalize_mac_array,
-    normalize_org_name,
+    split_site_name_and_org,
     org_map_matched,
     filter_matching_ip_addresses,
     valid_hardware_serial,
@@ -62,7 +62,7 @@ def normalize_sentinel(df):
             col_if_exists(clean, "site_id"),
         ).cast("string")
     )
-    normalised_org = normalize_org_name(site_name_raw)
+    mapped_site_name, normalised_org = split_site_name_and_org(site_name_raw)
 
     source_record_id = clean_string(col("id").cast("string"))
     source_natural_id = clean_string(col("uuid"))
@@ -95,11 +95,11 @@ def normalize_sentinel(df):
         .withColumn("unmanaged", lit(None).cast("boolean"))
         .withColumn("tags", clean_string_array(col("tags.sentinelone")))
         .withColumn("site_id", source_site_ref_id)
-        .withColumn("site_name", clean_string(site_name_raw))
+        .withColumn("site_name", mapped_site_name)
         .withColumn("normalised_org_name", normalised_org)
         .withColumn("account_id", clean_string(col("accountId")))
         .withColumn("account_name", clean_string(col("accountName")))
-        .withColumn("org_map_matched", org_map_matched(col("site_name"), col("normalised_org_name")))
+        .withColumn("org_map_matched", org_map_matched(site_name_raw, col("normalised_org_name")))
         .withColumn("site_description", lit(None).cast("string"))
         .withColumn("site_type", lit(None).cast("string"))
         .withColumn("site_importance", lit(None).cast("string"))

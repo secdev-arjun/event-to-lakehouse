@@ -12,7 +12,7 @@ from mapping.target import (
     clean_string_array,
     normalize_mac_string,
     normalize_mac_array,
-    normalize_org_name,
+    split_site_name_and_org,
     org_map_matched,
     filter_matching_ip_addresses,
 )
@@ -159,7 +159,7 @@ def normalize_rapid7(df, rapid7_site_df=None):
         clean_string(col("_rapid7_site_lookup_name")),
         clean_string(col("site_name")),
     )
-    normalised_org = normalize_org_name(canonical_site_name)
+    mapped_site_name, normalised_org = split_site_name_and_org(canonical_site_name)
 
     df = (
         rapid7_clean.withColumn("source", col("source"))
@@ -189,11 +189,11 @@ def normalize_rapid7(df, rapid7_site_df=None):
         .withColumn("unmanaged", lit(None).cast("boolean"))
         .withColumn("tags", lit(None).cast("array<string>"))
         .withColumn("site_id", source_site_ref_id)
-        .withColumn("site_name", canonical_site_name)
+        .withColumn("site_name", mapped_site_name)
         .withColumn("normalised_org_name", normalised_org)
         .withColumn("account_id", lit(None).cast("string"))
         .withColumn("account_name", lit(None).cast("string"))
-        .withColumn("org_map_matched", org_map_matched(col("site_name"), col("normalised_org_name")))
+        .withColumn("org_map_matched", org_map_matched(canonical_site_name, col("normalised_org_name")))
         .withColumn("site_description", clean_string(col("_rapid7_site_description")))
         .withColumn("site_type", clean_string(col("_rapid7_site_type")))
         .withColumn("site_importance", clean_string(col("_rapid7_site_importance")))

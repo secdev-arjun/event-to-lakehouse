@@ -368,66 +368,6 @@
       "rules": [
         {
           "op": "trim"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^cced windows quarter$",
-          "replacement": "CCED"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^ccedorg$",
-          "replacement": "CCED"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^cc energy development oman$",
-          "replacement": "CCED"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^securado$",
-          "replacement": "Securado"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^securado hq$",
-          "replacement": "Securado"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^securado - hq$",
-          "replacement": "Securado"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^securado ho$",
-          "replacement": "Securado"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^securado - ho$",
-          "replacement": "Securado"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^securado headoffice$",
-          "replacement": "Securado"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^securado - head office$",
-          "replacement": "Securado"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^securado head office$",
-          "replacement": "Securado"
-        },
-        {
-          "op": "regex_replace",
-          "pattern": "(?i)^securado-in$",
-          "replacement": "Securado"
         }
       ]
     },
