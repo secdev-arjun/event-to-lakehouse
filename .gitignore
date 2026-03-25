@@ -3,6 +3,7 @@ lake/
 minio-data/
 jars/
 rest_catalog/
+.worktrees/
 # Python virtual env
 venv/
 .venv/
