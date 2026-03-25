@@ -99,11 +99,22 @@ Derived helper columns:
 - `os_family_key`
   - normalized `os_family`
 - `physical_mac_keys`
-  - exact MAC evidence from `mac_addresses` after excluding values found in `gateway_mac_addresses` and `virtual_mac_addresses`
+  - normalized array of exact device MAC values from `mac_addresses` after excluding values found in `gateway_mac_addresses` and `virtual_mac_addresses`
+  - this helper remains array-valued in the source matching view
+  - MAC-based rules will explode this array into a stage-local scalar `physical_mac_key` so matching remains exact and auditable per MAC value
 - `site_present_flag`
   - true when `site_key` is non-null
 - `evidence_completeness_score`
-  - count of non-null evidence fields used to rank duplicates
+  - count of populated evidence fields used to rank duplicates
+  - field list:
+    - `hostname_key`
+    - `ip_key`
+    - `serial_key`
+    - `os_family_key`
+    - `os_name`
+    - `os_version`
+    - `physical_mac_keys`
+  - arrays contribute at most one point when non-empty
 - `freshness_ts`
   - `coalesce(source_updated_at, last_seen_at, ingest_ts)`
 
@@ -159,6 +170,7 @@ Rules will be defined as centralized ordered config objects. Each rule definitio
    - key: `org_key + physical_mac_key`
    - auto-accept: yes
    - rationale: strongest shared exact hardware evidence after excluding non-device MACs
+   - implementation note: `physical_mac_key` is the scalar value produced by exploding `physical_mac_keys` for the current rule stage
 
 3. `org_site_ip_exact`
    - key: `org_key + site_key + ip_key`
@@ -283,6 +295,12 @@ If a rule cannot run because required columns are missing for a pair, the engine
 
 Stores accepted auto-match pairwise edges only.
 
+Grain:
+
+- one row per accepted pairwise edge
+- a pairwise edge is emitted once, at the first rule stage that safely auto-accepts it
+- because matched rows are removed from residue after acceptance, the same accepted edge must not be emitted again by lower-priority rules
+
 Required fields:
 
 - `source_pair`
@@ -302,6 +320,13 @@ Required fields:
 
 Stores ambiguous and review-only pairwise outputs only.
 
+Grain:
+
+- one row per rule-stage review event
+- review rows are intentionally not deduplicated across rules
+- the same source entities may appear more than once if different rules surface different ambiguity or review conditions
+- this dataset is for diagnostics, analyst review, and rule-quality measurement
+
 Required fields:
 
 - `source_pair`
@@ -320,7 +345,10 @@ Stores rows left unmatched after all rule stages.
 
 Required behavior:
 
-- singleton-ready structure
+- source-row grain
+- one row per source observation still unmatched after all rule stages complete
+- singleton-ready structure, meaning each row carries enough lineage and deterministic identity to be promoted later into a singleton gold entity if that phase is enabled
+- singleton-only components are represented here as unmatched source rows, not as consolidated multi-row component records in this phase
 - no flow into `gold_assets_current` during this phase
 - preserve enough lineage to enable later singleton promotion
 
