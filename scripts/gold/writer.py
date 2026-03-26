@@ -9,6 +9,13 @@ def ensure_table(df: DataFrame, table_name: str):
         return
 
     existing_fields = {f.name: f.dataType for f in spark.table(table_name).schema.fields}
+    desired_cols = set(df.columns)
+    obsolete_cols = [name for name in existing_fields.keys() if name not in desired_cols]
+    for name in obsolete_cols:
+        spark.sql(f"ALTER TABLE {table_name} DROP COLUMN {name}")
+
+    # Refresh schema after potential drops.
+    existing_fields = {f.name: f.dataType for f in spark.table(table_name).schema.fields}
     missing = [f for f in df.schema.fields if f.name not in existing_fields]
     if missing:
         cols_sql = ", ".join([f"{f.name} {f.dataType.simpleString()}" for f in missing])

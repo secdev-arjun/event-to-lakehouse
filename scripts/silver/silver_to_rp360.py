@@ -39,31 +39,42 @@ os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 # Config
 # ------------------------------------------------------------------------------
 
-GOLD_TABLE = os.getenv("GOLD_TABLE", "iceberg.gold.assets_current")
+RAPID7_SILVER_CURRENT_TABLE = os.getenv(
+    "RAPID7_SILVER_CURRENT_TABLE",
+    "iceberg.silver.rapid7__assets__silver__current",
+)
+FORTI_SILVER_CURRENT_TABLE = os.getenv(
+    "FORTI_SILVER_CURRENT_TABLE",
+    "iceberg.silver.fortisiem__device__silver__current",
+)
+SENTINEL_SILVER_CURRENT_TABLE = os.getenv(
+    "SENTINEL_SILVER_CURRENT_TABLE",
+    "iceberg.silver.sentinalone__agents__silver__current",
+)
 
 RP360_BASE_URL = os.getenv("RP360_BASE_URL", "http://172.16.232.51:4000/")
 RP360_USERNAME = os.getenv("RP360_USERNAME", "admin")
 RP360_PASSWORD = os.getenv("RP360_PASSWORD", "admin")
 RP360_TIMEOUT_SECONDS = int(os.getenv("RP360_TIMEOUT_SECONDS", "30"))
 
-RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "gold_asset_v2").strip().lower()
-RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "gold_asset_v2")
-RP360_SCHEMA_VERBOSE_NAME = os.getenv("RP360_SCHEMA_VERBOSE_NAME", "Gold Asset")
+RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "silver_filter").strip().lower()
+RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "silver_filter")
+RP360_SCHEMA_VERBOSE_NAME = os.getenv("RP360_SCHEMA_VERBOSE_NAME", "Silver Asset")
 RP360_SCHEMA_DESCRIPTION = os.getenv(
     "RP360_SCHEMA_DESCRIPTION",
-    "Canonical gold asset generated from iceberg.gold.assets_current.",
+    "Canonical silver asset observation generated from all silver current tables.",
 )
 RP360_ENSURE_TYPE_SCHEMA = os.getenv("RP360_ENSURE_TYPE_SCHEMA", "true").lower() == "true"
 
-SYNC_STATE_TABLE = os.getenv("RP360_SYNC_STATE_TABLE", "iceberg.gold.rp360_sync_state")
-SYNC_ERROR_TABLE = os.getenv("RP360_SYNC_ERROR_TABLE", "iceberg.gold.rp360_sync_errors")
+SYNC_STATE_TABLE = os.getenv("RP360_SYNC_STATE_TABLE", "iceberg.silver.rp360_sync_state")
+SYNC_ERROR_TABLE = os.getenv("RP360_SYNC_ERROR_TABLE", "iceberg.silver.rp360_sync_errors")
 
 MAX_ROWS_PER_RUN = int(os.getenv("MAX_ROWS_PER_RUN", "0"))  # 0 = no limit
 FAIL_ON_ROW_ERROR = os.getenv("FAIL_ON_ROW_ERROR", "false").lower() == "true"
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
 
-REQUIRED_FIELDS = ["gold_asset_id", "gold_payload_hash"]
-UNIQUE_CONSTRAINTS = [["gold_asset_id"]]
+REQUIRED_FIELDS = ["silver_ci_id", "silver_payload_hash"]
+UNIQUE_CONSTRAINTS = [["silver_ci_id"]]
 FORCED_EXCLUDED_FIELDS = {"raw_json", "raw_payload"}
 EXCLUDED_FIELDS = FORCED_EXCLUDED_FIELDS.union(
     {f.strip() for f in os.getenv("RP360_EXCLUDED_FIELDS", "").split(",") if f.strip()}
@@ -76,7 +87,7 @@ EXCLUDED_FIELDS = FORCED_EXCLUDED_FIELDS.union(
 
 spark = (
     SparkSession.builder
-    .appName("Gold -> RP360 CI Sync")
+    .appName("Silver -> RP360 CI Sync")
     .config("spark.executorEnv.PYTHONPATH", os.environ.get("PYTHONPATH", ""))
     .config("spark.sql.shuffle.partitions", "4")
     .config("spark.default.parallelism", "4")
@@ -120,10 +131,7 @@ def _json_type_for_spark_type(dt: DataType) -> Dict[str, Any]:
     if isinstance(dt, DateType):
         return {"type": "string", "format": "date"}
     if isinstance(dt, ArrayType):
-        item_schema = _json_type_for_spark_type(dt.elementType)
-        return {"type": "array", "items": item_schema}
-    # RP360 CI schemas are object-focused and usually flat for this use case.
-    # For unsupported complex nested types, preserve as JSON string.
+        return {"type": "array", "items": _json_type_for_spark_type(dt.elementType)}
     return {"type": "string"}
 
 
@@ -151,7 +159,7 @@ def build_rp360_schema(df_schema: StructType) -> Dict[str, Any]:
         "verbose_name": RP360_SCHEMA_VERBOSE_NAME,
         "required": required,
         "properties": properties,
-        "unique_constraints": UNIQUE_CONSTRAINTS if "gold_asset_id" in cols else [],
+        "unique_constraints": UNIQUE_CONSTRAINTS if "silver_ci_id" in cols else [],
     }
 
 
@@ -283,7 +291,6 @@ class RP360Client:
                 out.extend([x for x in data if isinstance(x, dict)])
                 next_url = None
             else:
-                # Some APIs return a single object on non-paginated list edge cases.
                 if isinstance(data, dict):
                     out.append(data)
                 next_url = None
@@ -311,13 +318,11 @@ class RP360Client:
         if _stable_json(existing_schema) == _stable_json(schema):
             return str(type_id)
 
-        # Preferred schema endpoint.
-        patch_status, patch_data = self._request("PATCH", f"/api/types/schema/{type_id}/", schema)
+        patch_status, _ = self._request("PATCH", f"/api/types/schema/{type_id}/", schema)
         if 200 <= patch_status < 300:
             return str(type_id)
 
-        # Fallback endpoint style.
-        patch_status, patch_data = self._request(
+        patch_status, _ = self._request(
             "PATCH",
             f"/api/types/schema/{type_id}/",
             {"schema": schema},
@@ -325,7 +330,6 @@ class RP360Client:
         if 200 <= patch_status < 300:
             return str(type_id)
 
-        # Final fallback to type detail patch.
         patch_status, patch_data = self._request(
             "PATCH",
             f"/api/types/{type_id}/",
@@ -338,12 +342,12 @@ class RP360Client:
             f"Failed to update schema for type '{type_title}' ({patch_status}): {patch_data}"
         )
 
-    def search_ci_by_asset_id(self, type_title: str, gold_asset_id: str) -> Optional[str]:
-        escaped = gold_asset_id.replace("\\", "\\\\").replace('"', '\\"')
+    def search_ci_by_field(self, type_title: str, field_name: str, field_value: str) -> Optional[str]:
+        escaped = field_value.replace("\\", "\\\\").replace('"', '\\"')
         payload = {
             "searchMode": "field",
-            "filterText": f'gold_asset_id = "{escaped}"',
-            "properties": ["id", "gold_asset_id", "gold_payload_hash"],
+            "filterText": f'{field_name} = "{escaped}"',
+            "properties": ["id", field_name],
         }
         encoded_type = urlparse.quote(type_title, safe="")
         status, data = self._request("POST", f"/api/CIs/Type/{encoded_type}/", payload)
@@ -393,20 +397,19 @@ def _extract_items(payload: Any) -> Iterable[Dict[str, Any]]:
                 if isinstance(item, dict):
                     yield item
             return
-        # Handle single object responses.
         if "id" in payload:
             yield payload
 
 
 # ------------------------------------------------------------------------------
-# Sync table helpers
+# Silver union + sync table helpers
 # ------------------------------------------------------------------------------
 
 
 STATE_FIELDS = StructType(
     [
-        StructField("gold_asset_id", StringType(), False),
-        StructField("gold_payload_hash", StringType(), True),
+        StructField("silver_ci_id", StringType(), False),
+        StructField("silver_payload_hash", StringType(), True),
         StructField("rp360_ci_id", StringType(), True),
         StructField("synced_at", TimestampType(), True),
         StructField("status", StringType(), True),
@@ -416,7 +419,7 @@ STATE_FIELDS = StructType(
 
 ERROR_FIELDS = StructType(
     [
-        StructField("gold_asset_id", StringType(), True),
+        StructField("silver_ci_id", StringType(), True),
         StructField("error", StringType(), True),
         StructField("payload_json", StringType(), True),
         StructField("attempted_at", TimestampType(), True),
@@ -436,62 +439,95 @@ def ensure_table_with_schema(table_name: str, schema: StructType) -> None:
         spark.sql(f"ALTER TABLE {table_name} ADD COLUMNS ({cols_sql})")
 
 
-def dedupe_by_gold_asset_id(df):
-    if "gold_asset_id" not in df.columns:
+def _ensure_required_silver_cols(df):
+    required = ["source_system", "entity_id", "payload_hash"]
+    out = df
+    for col_name in required:
+        if col_name not in out.columns:
+            out = out.withColumn(col_name, F.lit(None).cast("string"))
+    return out
+
+
+def _build_silver_payload_hash(df):
+    fallback_cols = sorted(
+        c for c in df.columns if c not in {"payload_hash", "silver_payload_hash", "raw_json", "raw_payload"}
+    )
+    fallback_struct = F.struct(*[F.col(c) for c in fallback_cols]) if fallback_cols else F.struct()
+    return F.coalesce(
+        F.col("payload_hash").cast("string"),
+        F.sha2(F.to_json(fallback_struct), 256),
+    )
+
+
+def load_combined_silver_df():
+    r7 = _ensure_required_silver_cols(spark.table(RAPID7_SILVER_CURRENT_TABLE))
+    fsm = _ensure_required_silver_cols(spark.table(FORTI_SILVER_CURRENT_TABLE))
+    s1 = _ensure_required_silver_cols(spark.table(SENTINEL_SILVER_CURRENT_TABLE))
+
+    combined = r7.unionByName(fsm, allowMissingColumns=True).unionByName(s1, allowMissingColumns=True)
+    combined = (
+        combined.withColumn(
+            "silver_ci_id",
+            F.sha2(
+                F.concat_ws(
+                    "|",
+                    F.lower(F.trim(F.coalesce(F.col("source_system"), F.lit("")))),
+                    F.trim(F.coalesce(F.col("entity_id").cast("string"), F.lit(""))),
+                ),
+                256,
+            ),
+        )
+        .withColumn("silver_payload_hash", _build_silver_payload_hash(combined))
+    )
+    return combined
+
+
+def dedupe_by_silver_ci_id(df):
+    if "silver_ci_id" not in df.columns:
         return df
 
     order_exprs = []
     if "_rp360_ci_id" in df.columns:
-        order_exprs.append(
-            F.when(F.col("_rp360_ci_id").isNotNull(), F.lit(1)).otherwise(F.lit(0)).desc()
-        )
+        order_exprs.append(F.when(F.col("_rp360_ci_id").isNotNull(), F.lit(1)).otherwise(F.lit(0)).desc())
     for col_name in ("source_updated_at", "last_seen_at", "ingest_ts", "first_seen_at"):
         if col_name in df.columns:
             order_exprs.append(F.col(col_name).desc_nulls_last())
     if not order_exprs:
         order_exprs = [F.lit(1)]
 
-    w = Window.partitionBy("gold_asset_id").orderBy(*order_exprs)
+    w = Window.partitionBy("silver_ci_id").orderBy(*order_exprs)
     return (
-        df.filter(F.col("gold_asset_id").isNotNull())
+        df.filter(F.col("silver_ci_id").isNotNull())
         .withColumn("_rn_asset", F.row_number().over(w))
         .filter(F.col("_rn_asset") == 1)
         .drop("_rn_asset")
     )
 
 
-def compute_delta_df(gold_table: str, state_table: str):
-    if not spark.catalog.tableExists(gold_table):
-        raise ValueError(f"Gold table not found: {gold_table}")
-
-    gold_df = spark.table(gold_table)
-    needed = {"gold_asset_id", "gold_payload_hash"}
-    missing_needed = [c for c in needed if c not in gold_df.columns]
+def compute_delta_df(silver_df, state_table: str):
+    needed = {"silver_ci_id", "silver_payload_hash"}
+    missing_needed = [c for c in needed if c not in silver_df.columns]
     if missing_needed:
-        raise ValueError(
-            f"Gold table missing required columns for sync: {missing_needed}"
-        )
+        raise ValueError(f"Silver dataset missing required columns for sync: {missing_needed}")
 
     if not spark.catalog.tableExists(state_table):
-        return dedupe_by_gold_asset_id(
-            gold_df.withColumn("_rp360_ci_id", F.lit(None).cast("string"))
-        )
+        return dedupe_by_silver_ci_id(silver_df.withColumn("_rp360_ci_id", F.lit(None).cast("string")))
 
     state_df = (
         spark.table(state_table)
-        .select("gold_asset_id", "gold_payload_hash", "rp360_ci_id", "status")
+        .select("silver_ci_id", "silver_payload_hash", "rp360_ci_id", "status")
         .alias("s")
     )
-    joined = gold_df.alias("g").join(state_df, on="gold_asset_id", how="left")
+    joined = silver_df.alias("g").join(state_df, on="silver_ci_id", how="left")
 
     delta = joined.filter(
-        F.col("s.gold_payload_hash").isNull()
-        | (F.col("g.gold_payload_hash") != F.col("s.gold_payload_hash"))
+        F.col("s.silver_payload_hash").isNull()
+        | (F.col("g.silver_payload_hash") != F.col("s.silver_payload_hash"))
         | (F.col("s.status").isNull())
         | (F.col("s.status") != F.lit("success"))
     )
     delta = delta.select("g.*", F.col("s.rp360_ci_id").alias("_rp360_ci_id"))
-    return dedupe_by_gold_asset_id(delta)
+    return dedupe_by_silver_ci_id(delta)
 
 
 def merge_state_updates(rows: List[Tuple[str, str, Optional[str], datetime, str, str]]) -> None:
@@ -500,17 +536,17 @@ def merge_state_updates(rows: List[Tuple[str, str, Optional[str], datetime, str,
     updates_df = spark.createDataFrame(
         rows,
         [
-            "gold_asset_id",
-            "gold_payload_hash",
+            "silver_ci_id",
+            "silver_payload_hash",
             "rp360_ci_id",
             "synced_at",
             "status",
             "last_error",
         ],
     )
-    updates_df = updates_df.filter(F.col("gold_asset_id").isNotNull())
+    updates_df = updates_df.filter(F.col("silver_ci_id").isNotNull())
     status_rank = F.when(F.col("status") == F.lit("success"), F.lit(1)).otherwise(F.lit(0))
-    w = Window.partitionBy("gold_asset_id").orderBy(
+    w = Window.partitionBy("silver_ci_id").orderBy(
         status_rank.desc(),
         F.col("synced_at").desc_nulls_last(),
     )
@@ -525,23 +561,23 @@ def merge_state_updates(rows: List[Tuple[str, str, Optional[str], datetime, str,
         f"""
         MERGE INTO {SYNC_STATE_TABLE} t
         USING rp360_sync_state_updates s
-        ON t.gold_asset_id = s.gold_asset_id
+        ON t.silver_ci_id = s.silver_ci_id
         WHEN MATCHED THEN UPDATE SET
-            gold_payload_hash = s.gold_payload_hash,
+            silver_payload_hash = s.silver_payload_hash,
             rp360_ci_id = s.rp360_ci_id,
             synced_at = s.synced_at,
             status = s.status,
             last_error = s.last_error
         WHEN NOT MATCHED THEN INSERT (
-            gold_asset_id,
-            gold_payload_hash,
+            silver_ci_id,
+            silver_payload_hash,
             rp360_ci_id,
             synced_at,
             status,
             last_error
         ) VALUES (
-            s.gold_asset_id,
-            s.gold_payload_hash,
+            s.silver_ci_id,
+            s.silver_payload_hash,
             s.rp360_ci_id,
             s.synced_at,
             s.status,
@@ -554,7 +590,7 @@ def merge_state_updates(rows: List[Tuple[str, str, Optional[str], datetime, str,
 def append_error_rows(rows: List[Tuple[Optional[str], str, str, datetime]]) -> None:
     if not rows:
         return
-    err_df = spark.createDataFrame(rows, ["gold_asset_id", "error", "payload_json", "attempted_at"])
+    err_df = spark.createDataFrame(rows, ["silver_ci_id", "error", "payload_json", "attempted_at"])
     err_df.writeTo(SYNC_ERROR_TABLE).append()
 
 
@@ -578,8 +614,8 @@ def main() -> None:
     ensure_table_with_schema(SYNC_STATE_TABLE, STATE_FIELDS)
     ensure_table_with_schema(SYNC_ERROR_TABLE, ERROR_FIELDS)
 
-    gold_df = spark.table(GOLD_TABLE)
-    rp360_schema = build_rp360_schema(gold_df.schema)
+    silver_df = load_combined_silver_df()
+    rp360_schema = build_rp360_schema(silver_df.schema)
 
     client = RP360Client(
         base_url=RP360_BASE_URL,
@@ -591,7 +627,7 @@ def main() -> None:
     type_id = client.ensure_type(RP360_TYPE_TITLE, rp360_schema, ensure_schema=RP360_ENSURE_TYPE_SCHEMA)
     print(f"[INFO] RP360 type ready: title={RP360_TYPE_TITLE}, id={type_id}")
 
-    delta_df = compute_delta_df(GOLD_TABLE, SYNC_STATE_TABLE)
+    delta_df = compute_delta_df(silver_df, SYNC_STATE_TABLE)
     if MAX_ROWS_PER_RUN > 0:
         delta_df = delta_df.limit(MAX_ROWS_PER_RUN)
 
@@ -613,8 +649,12 @@ def main() -> None:
         row_dict.pop("raw_json", None)
         row_dict.pop("raw_payload", None)
 
-        gold_asset_id = str(row_dict.get("gold_asset_id")) if row_dict.get("gold_asset_id") is not None else None
-        gold_payload_hash = str(row_dict.get("gold_payload_hash")) if row_dict.get("gold_payload_hash") is not None else ""
+        silver_ci_id = str(row_dict.get("silver_ci_id")) if row_dict.get("silver_ci_id") is not None else None
+        silver_payload_hash = (
+            str(row_dict.get("silver_payload_hash"))
+            if row_dict.get("silver_payload_hash") is not None
+            else ""
+        )
 
         try:
             ci_data = build_ci_data(row_dict, schema_props, required_fields)
@@ -623,8 +663,8 @@ def main() -> None:
             if DRY_RUN:
                 success_updates.append(
                     (
-                        gold_asset_id or "",
-                        gold_payload_hash,
+                        silver_ci_id or "",
+                        silver_payload_hash,
                         str(hinted_ci_id) if hinted_ci_id is not None else None,
                         now_ts,
                         "success",
@@ -638,37 +678,39 @@ def main() -> None:
             if ci_id:
                 ok, msg = client.patch_ci(ci_id, ci_data)
                 if ok:
-                    success_updates.append((gold_asset_id or "", gold_payload_hash, ci_id, now_ts, "success", ""))
+                    success_updates.append((silver_ci_id or "", silver_payload_hash, ci_id, now_ts, "success", ""))
                     success += 1
                     continue
+                print(f"[WARN] patch by hinted id failed for silver_ci_id={silver_ci_id}: {msg}")
                 ci_id = None
 
-            if not ci_id and gold_asset_id:
-                ci_id = client.search_ci_by_asset_id(RP360_TYPE_TITLE, gold_asset_id)
+            if not ci_id and silver_ci_id:
+                ci_id = client.search_ci_by_field(RP360_TYPE_TITLE, "silver_ci_id", silver_ci_id)
                 if ci_id:
                     ok, msg = client.patch_ci(ci_id, ci_data)
                     if ok:
                         success_updates.append(
-                            (gold_asset_id or "", gold_payload_hash, ci_id, now_ts, "success", "")
+                            (silver_ci_id or "", silver_payload_hash, ci_id, now_ts, "success", "")
                         )
                         success += 1
                         continue
+                    print(f"[WARN] patch by searched id failed for silver_ci_id={silver_ci_id}: {msg}")
 
             ok, created_ci_id, err_msg = client.create_ci(RP360_TYPE_TITLE, ci_data)
             if ok:
                 success_updates.append(
-                    (gold_asset_id or "", gold_payload_hash, created_ci_id, now_ts, "success", "")
+                    (silver_ci_id or "", silver_payload_hash, created_ci_id, now_ts, "success", "")
                 )
                 success += 1
                 continue
 
             failed += 1
             err_text = err_msg or "unknown create error"
-            error_rows.append((gold_asset_id, err_text, json.dumps(payload, default=str), now_ts))
+            error_rows.append((silver_ci_id, err_text, json.dumps(payload, default=str), now_ts))
             success_updates.append(
                 (
-                    gold_asset_id or "",
-                    gold_payload_hash,
+                    silver_ci_id or "",
+                    silver_payload_hash,
                     ci_id,
                     now_ts,
                     "failed",
@@ -689,11 +731,11 @@ def main() -> None:
                     if k not in {"_rp360_ci_id", "raw_json", "raw_payload"}
                 },
             }
-            error_rows.append((gold_asset_id, err_text, json.dumps(fallback_payload, default=str), now_ts))
+            error_rows.append((silver_ci_id, err_text, json.dumps(fallback_payload, default=str), now_ts))
             success_updates.append(
                 (
-                    gold_asset_id or "",
-                    gold_payload_hash,
+                    silver_ci_id or "",
+                    silver_payload_hash,
                     str(hinted_ci_id) if hinted_ci_id is not None else None,
                     now_ts,
                     "failed",

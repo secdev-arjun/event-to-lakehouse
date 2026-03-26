@@ -400,9 +400,8 @@ services:
       KAFKA_TOPIC: minio.object.events
     volumes:
       - ./scripts:/opt/spark/scripts
-      - ./config:/opt/spark/config:ro
-      - ./config:/opt/spark/config:ro
       - ./jars:/opt/spark/jars-extra:ro
+      - ./config:/opt/spark/config:ro
     ports:
       - "4040:4040"
       - "4041:4041"
@@ -629,6 +628,7 @@ services:
       BRONZE_CURRENT_INTERVAL_SECONDS: "60"
     volumes:
       - ./scripts:/opt/spark/scripts
+      - ./jars:/opt/spark/jars-extra:ro
     networks:
       - lakehouse_net
       - default
@@ -638,7 +638,7 @@ services:
       - |
         DRIVER_HOST="$(hostname -i | awk '{print $1}')";
         /opt/spark/bin/spark-submit \
-          --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.5.1,org.apache.hadoop:hadoop-aws:3.3.4,software.amazon.awssdk:bundle:2.24.8,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.5 \
+          --jars /opt/spark/jars-extra/iceberg-spark-runtime-3.5_2.12-1.5.1.jar,/opt/spark/jars-extra/hadoop-aws-3.3.4.jar,/opt/spark/jars-extra/aws-java-sdk-bundle-1.12.262.jar,/opt/spark/jars-extra/spark-sql-kafka-0-10_2.12-3.5.5.jar,/opt/spark/jars-extra/spark-token-provider-kafka-0-10_2.12-3.5.5.jar,/opt/spark/jars-extra/kafka-clients-3.4.1.jar,/opt/spark/jars-extra/lz4-java-1.8.0.jar,/opt/spark/jars-extra/snappy-java-1.1.10.5.jar,/opt/spark/jars-extra/slf4j-api-2.0.7.jar,/opt/spark/jars-extra/hadoop-client-runtime-3.3.4.jar,/opt/spark/jars-extra/hadoop-client-api-3.3.4.jar,/opt/spark/jars-extra/commons-logging-1.1.3.jar,/opt/spark/jars-extra/jsr305-3.0.0.jar,/opt/spark/jars-extra/commons-pool2-2.11.1.jar,/opt/spark/jars-extra/wildfly-openssl-1.0.7.Final.jar,/opt/spark/jars-extra/bundle-2.24.8.jar \
           --conf spark.driver.memory=512m \
           --conf spark.executor.memory=512m \
           --conf spark.sql.shuffle.partitions=4 \

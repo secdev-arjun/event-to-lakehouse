@@ -134,7 +134,6 @@ MATCH_RULES = (
 # Canonical fields to hash for gold_payload_hash.
 GOLD_HASH_COLUMNS = [
     "master_entity_id",
-    "source_presence_label",
     "asset_name",
     "primary_hostname",
     "primary_ip",
@@ -148,7 +147,6 @@ GOLD_HASH_COLUMNS = [
     "match_rule_summary",
     "min_match_rule_rank",
     "source_count",
-    "edge_count",
     "first_seen_at",
     "last_seen_at",
     "source_updated_at",

@@ -2,7 +2,6 @@ from pyspark.sql import DataFrame, functions as F
 
 from mapping.target import TARGET_FIELDS
 from .config import GOLD_HASH_COLUMNS
-from .derived_fields import add_derived_fields
 from .utils import max_non_null, min_non_null, prefix_columns
 
 
@@ -21,30 +20,6 @@ def _add_missing_target_fields(df: DataFrame) -> DataFrame:
         if field.name not in out.columns:
             out = out.withColumn(field.name, F.lit(None).cast(field.dataType))
     return out
-
-
-def _presence_label(seen_s, seen_r, seen_f):
-    return (
-        F.when(seen_r & seen_f & seen_s, F.lit("R7_FSM_S1"))
-        .when(seen_r & seen_f, F.lit("R7_FSM"))
-        .when(seen_r & seen_s, F.lit("R7_S1"))
-        .when(seen_f & seen_s, F.lit("FSM_S1"))
-        .when(seen_r, F.lit("R7_only"))
-        .when(seen_f, F.lit("FSM_only"))
-        .when(seen_s, F.lit("S1_only"))
-        .otherwise(F.lit("unknown"))
-    )
-
-
-def _source_candidates_json(*candidate_structs):
-    candidates = F.filter(F.array(*candidate_structs), lambda x: x.isNotNull())
-    return candidates, F.to_json(candidates)
-
-
-def _conflict_flag(candidates):
-    norm = F.array_distinct(F.transform(candidates, lambda x: F.lower(F.trim(x["value"]))))
-    norm = F.filter(norm, lambda x: x.isNotNull() & (x != ""))
-    return F.size(norm) > 1
 
 
 def _col_or_null(df: DataFrame, name: str, dtype: str = "string"):
@@ -75,83 +50,33 @@ def build_gold_rows(
     seen_in_rapid7 = F.col("g.seen_in_rapid7")
     seen_in_fortisiem = F.col("g.seen_in_fortisiem")
     source_count = F.col("g.source_count")
-    edge_count = F.col("g.edge_count")
     matched_sources = F.col("g.matched_sources")
     match_rule_summary = F.coalesce(F.col("g.match_rule_summary"), _empty_str_array())
     min_match_rule_rank = F.col("g.min_match_rule_rank").cast("int")
-    presence_label = _presence_label(seen_in_sentinalone, seen_in_rapid7, seen_in_fortisiem)
 
     primary_hostname = F.coalesce(F.col("s_primary_hostname"), F.col("r_primary_hostname"))
-    primary_hostname_source = (
-        F.when(F.col("s_primary_hostname").isNotNull(), F.lit("sentinalone"))
-        .when(F.col("r_primary_hostname").isNotNull(), F.lit("rapid7"))
-        .otherwise(F.lit(None).cast("string"))
-    )
 
     asset_name = F.coalesce(F.col("s_asset_name"), F.col("r_asset_name"), F.col("f_source_display_name"))
-    asset_name_source = (
-        F.when(F.col("s_asset_name").isNotNull(), F.lit("sentinalone"))
-        .when(F.col("r_asset_name").isNotNull(), F.lit("rapid7"))
-        .when(F.col("f_source_display_name").isNotNull(), F.lit("fortisiem"))
-        .otherwise(F.lit(None).cast("string"))
-    )
 
     primary_ip = F.coalesce(F.col("r_primary_ip"), F.col("s_primary_ip"))
-    primary_ip_source = (
-        F.when(F.col("r_primary_ip").isNotNull(), F.lit("rapid7"))
-        .when(F.col("s_primary_ip").isNotNull(), F.lit("sentinalone"))
-        .otherwise(F.lit(None).cast("string"))
-    )
     access_ip = F.coalesce(F.col("f_access_ip"), F.col("s_access_ip"))
     primary_mac = F.coalesce(F.col("r_primary_mac"), F.col("f_primary_mac"), F.col("s_primary_mac"))
-    primary_mac_source = (
-        F.when(F.col("r_primary_mac").isNotNull(), F.lit("rapid7"))
-        .when(F.col("f_primary_mac").isNotNull(), F.lit("fortisiem"))
-        .when(F.col("s_primary_mac").isNotNull(), F.lit("sentinalone"))
-        .otherwise(F.lit(None).cast("string"))
-    )
 
     serial_number = F.coalesce(F.col("s_serial_number"), F.col("f_serial_number"), F.col("r_serial_number"))
-    serial_number_source = (
-        F.when(F.col("s_serial_number").isNotNull(), F.lit("sentinalone"))
-        .when(F.col("f_serial_number").isNotNull(), F.lit("fortisiem"))
-        .when(F.col("r_serial_number").isNotNull(), F.lit("rapid7"))
-        .otherwise(F.lit(None).cast("string"))
-    )
 
     normalised_org_name = F.coalesce(
         F.col("r_normalised_org_name"),
         F.col("s_normalised_org_name"),
         F.col("f_normalised_org_name"),
     )
-    normalised_org_name_source = (
-        F.when(F.col("r_normalised_org_name").isNotNull(), F.lit("rapid7"))
-        .when(F.col("s_normalised_org_name").isNotNull(), F.lit("sentinalone"))
-        .when(F.col("f_normalised_org_name").isNotNull(), F.lit("fortisiem"))
-        .otherwise(F.lit(None).cast("string"))
-    )
 
     site_name = F.coalesce(F.col("r_site_name"), F.col("s_site_name"), F.col("f_site_name"))
-    site_name_source = (
-        F.when(F.col("r_site_name").isNotNull(), F.lit("rapid7"))
-        .when(F.col("s_site_name").isNotNull(), F.lit("sentinalone"))
-        .when(F.col("f_site_name").isNotNull(), F.lit("fortisiem"))
-        .otherwise(F.lit(None).cast("string"))
-    )
 
     os_name = F.coalesce(F.col("s_os_name"), F.col("r_os_name"), F.col("f_os_name"))
-    os_name_source = (
-        F.when(F.col("s_os_name").isNotNull(), F.lit("sentinalone"))
-        .when(F.col("r_os_name").isNotNull(), F.lit("rapid7"))
-        .when(F.col("f_os_name").isNotNull(), F.lit("fortisiem"))
-        .otherwise(F.lit(None).cast("string"))
-    )
 
     risk_score = F.col("r_risk_score")
-    risk_score_source = F.when(F.col("r_risk_score").isNotNull(), F.lit("rapid7")).otherwise(F.lit(None).cast("string"))
 
     device_vendor = F.col("f_device_vendor")
-    device_vendor_source = F.when(F.col("f_device_vendor").isNotNull(), F.lit("fortisiem")).otherwise(F.lit(None).cast("string"))
 
     all_hostnames = _union_arrays(F.col("r_hostnames"), F.col("s_hostnames"), F.col("f_hostnames"))
     all_ip_addresses = _union_arrays(F.col("r_ip_addresses"), F.col("f_ip_addresses"), F.col("s_ip_addresses"))
@@ -172,14 +97,6 @@ def build_gold_rows(
     r7_last_seen = F.coalesce(F.col("r_last_seen_at"), F.col("r_ingest_ts"))
     fsm_last_seen = F.coalesce(F.col("f_last_seen_at"), F.col("f_ingest_ts"))
     s1_last_seen = F.coalesce(F.col("s_last_seen_at"), F.col("s_ingest_ts"))
-    most_recent_source_ts = max_non_null(
-        r7_last_seen,
-        fsm_last_seen,
-        s1_last_seen,
-        F.col("r_source_updated_at"),
-        F.col("f_source_updated_at"),
-        F.col("s_source_updated_at"),
-    )
 
     first_seen_at = min_non_null(
         F.col("r_first_seen_at"),
@@ -191,52 +108,6 @@ def build_gold_rows(
     )
     last_seen_at = max_non_null(r7_last_seen, fsm_last_seen, s1_last_seen)
     source_updated_at = max_non_null(F.col("r_source_updated_at"), F.col("f_source_updated_at"), F.col("s_source_updated_at"))
-
-    hostname_struct_s = F.when(
-        F.col("s_primary_hostname").isNotNull(),
-        F.struct(F.lit("sentinalone").alias("source"), F.col("s_primary_hostname").alias("value"), s1_last_seen.alias("last_seen_at")),
-    )
-    hostname_struct_r = F.when(
-        F.col("r_primary_hostname").isNotNull(),
-        F.struct(F.lit("rapid7").alias("source"), F.col("r_primary_hostname").alias("value"), r7_last_seen.alias("last_seen_at")),
-    )
-    hostname_struct_f = F.when(
-        F.col("f_primary_hostname").isNotNull(),
-        F.struct(F.lit("fortisiem").alias("source"), F.col("f_primary_hostname").alias("value"), fsm_last_seen.alias("last_seen_at")),
-    )
-    hostname_candidates_arr, hostname_candidates = _source_candidates_json(hostname_struct_s, hostname_struct_r, hostname_struct_f)
-    hostname_conflict = _conflict_flag(hostname_candidates_arr)
-
-    os_struct_s = F.when(
-        F.col("s_os_name").isNotNull(),
-        F.struct(F.lit("sentinalone").alias("source"), F.col("s_os_name").alias("value"), s1_last_seen.alias("last_seen_at")),
-    )
-    os_struct_r = F.when(
-        F.col("r_os_name").isNotNull(),
-        F.struct(F.lit("rapid7").alias("source"), F.col("r_os_name").alias("value"), r7_last_seen.alias("last_seen_at")),
-    )
-    os_struct_f = F.when(
-        F.col("f_os_name").isNotNull(),
-        F.struct(F.lit("fortisiem").alias("source"), F.col("f_os_name").alias("value"), fsm_last_seen.alias("last_seen_at")),
-    )
-    os_candidates_arr, os_candidates = _source_candidates_json(os_struct_s, os_struct_r, os_struct_f)
-    os_conflict = _conflict_flag(os_candidates_arr)
-
-    site_struct_r = F.when(
-        F.col("r_site_name").isNotNull(),
-        F.struct(F.lit("rapid7").alias("source"), F.col("r_site_name").alias("value"), r7_last_seen.alias("last_seen_at")),
-    )
-    site_struct_s = F.when(
-        F.col("s_site_name").isNotNull(),
-        F.struct(F.lit("sentinalone").alias("source"), F.col("s_site_name").alias("value"), s1_last_seen.alias("last_seen_at")),
-    )
-    site_struct_f = F.when(
-        F.col("f_site_name").isNotNull(),
-        F.struct(F.lit("fortisiem").alias("source"), F.col("f_site_name").alias("value"), fsm_last_seen.alias("last_seen_at")),
-    )
-    site_candidates_arr, site_candidates = _source_candidates_json(site_struct_r, site_struct_s, site_struct_f)
-    site_conflict = _conflict_flag(site_candidates_arr)
-    has_conflicts = hostname_conflict | os_conflict | site_conflict
 
     match_method = F.concat_ws("+", match_rule_summary)
     master_entity_id = F.col("g.component_id")
@@ -271,18 +142,13 @@ def build_gold_rows(
         asset_name.alias("asset_name"),
         primary_hostname.alias("primary_hostname"),
         all_hostnames.alias("hostnames"),
-        all_hostnames.alias("all_hostnames"),
         F.coalesce(F.col("s_host_domain"), F.col("r_host_domain"), F.col("f_host_domain")).alias("host_domain"),
         primary_ip.alias("primary_ip"),
         all_ip_addresses.alias("ip_addresses"),
-        all_ip_addresses.alias("all_ip_addresses"),
         all_ip_addresses_raw.alias("ip_addresses_raw"),
-        all_ip_addresses_raw.alias("all_ip_addresses_raw"),
         all_ipv6_addresses.alias("ipv6_addresses"),
-        all_ipv6_addresses.alias("all_ipv6_addresses"),
         primary_mac.alias("primary_mac"),
         all_mac_addresses.alias("mac_addresses"),
-        all_mac_addresses.alias("all_mac_addresses"),
         gateway_mac_addresses.alias("gateway_mac_addresses"),
         virtual_mac_addresses.alias("virtual_mac_addresses"),
         serial_number.alias("serial_number"),
@@ -377,35 +243,13 @@ def build_gold_rows(
         seen_in_rapid7.alias("seen_in_rapid7"),
         seen_in_fortisiem.alias("seen_in_fortisiem"),
         source_count.alias("source_count"),
-        edge_count.alias("edge_count"),
-        presence_label.alias("source_presence_label"),
         matched_sources.alias("matched_sources"),
         F.col("g.match_rule_summary").alias("match_rule_summary"),
         min_match_rule_rank.alias("min_match_rule_rank"),
         F.col("g.component_id").alias("component_id"),
-        F.col("r_source_record_id").alias("r7_source_record_id"),
-        F.col("f_source_record_id").alias("fsm_source_record_id"),
-        F.col("s_source_record_id").alias("s1_source_record_id"),
-        F.col("r_source_natural_id").alias("r7_source_natural_id"),
-        F.col("f_source_natural_id").alias("fsm_source_natural_id"),
-        F.col("s_source_natural_id").alias("s1_source_natural_id"),
-        F.col("r_payload_hash").alias("r7_payload_hash"),
-        F.col("f_payload_hash").alias("fsm_payload_hash"),
-        F.col("s_payload_hash").alias("s1_payload_hash"),
         r7_last_seen.alias("r7_last_seen"),
         fsm_last_seen.alias("fsm_last_seen"),
         s1_last_seen.alias("s1_last_seen"),
-        most_recent_source_ts.alias("most_recent_source_ts"),
-        asset_name_source.alias("asset_name_source"),
-        primary_hostname_source.alias("primary_hostname_source"),
-        primary_ip_source.alias("primary_ip_source"),
-        primary_mac_source.alias("primary_mac_source"),
-        serial_number_source.alias("serial_number_source"),
-        normalised_org_name_source.alias("normalised_org_name_source"),
-        site_name_source.alias("site_name_source"),
-        os_name_source.alias("os_name_source"),
-        risk_score_source.alias("risk_score_source"),
-        device_vendor_source.alias("device_vendor_source"),
         match_method.alias("match_method"),
         F.lit("deterministic").alias("match_confidence"),
         F.lit(None).cast("int").alias("match_score"),
@@ -413,18 +257,9 @@ def build_gold_rows(
         match_rule_summary.alias("match_keys_used"),
         F.lit(False).alias("ambiguity_flag"),
         F.lit(False).alias("transitive_link_flag"),
-        has_conflicts.alias("has_conflicts"),
-        hostname_conflict.alias("hostname_conflict"),
-        os_conflict.alias("os_conflict"),
-        site_conflict.alias("site_conflict"),
-        hostname_candidates.alias("hostname_candidates"),
-        os_candidates.alias("os_candidates"),
-        site_candidates.alias("site_candidates"),
         now_ts.alias("gold_created_at"),
         now_ts.alias("gold_updated_at"),
     )
-
-    base = add_derived_fields(base)
     base = _add_missing_target_fields(base)
 
     hash_cols = [F.col(name) for name in GOLD_HASH_COLUMNS if name in base.columns]
