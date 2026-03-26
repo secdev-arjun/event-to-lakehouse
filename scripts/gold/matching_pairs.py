@@ -1,650 +1,513 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
 from pyspark.sql import DataFrame, functions as F
+from pyspark.sql.types import (
+    ArrayType,
+    BooleanType,
+    IntegerType,
+    LongType,
+    StringType,
+    StructField,
+    StructType,
+    TimestampType,
+)
 from pyspark.sql.window import Window
 
-from .config import (
-    AUTO_MERGE_TIER1_MIN_SCORE,
-    AUTO_MERGE_TIER2_MIN_SCORE,
-    MATCH_SCORES,
-    PRIVATE_IP_REGEX,
-    REVIEW_MIN_SCORE,
-    REVIEW_ONLY_METHODS,
-    TIER1_METHODS,
-    TIER2_METHODS,
+from .config import MATCH_RULES, MatchRuleDefinition, SOURCE_FSM, SOURCE_R7, SOURCE_S1
+
+
+MATCH_OUTPUT_SCHEMA = StructType(
+    [
+        StructField("record_scope", StringType(), True),
+        StructField("source_pair", StringType(), True),
+        StructField("rule_name", StringType(), True),
+        StructField("rule_rank", IntegerType(), True),
+        StructField("rule_status", StringType(), True),
+        StructField("rule_status_note", StringType(), True),
+        StructField("match_status", StringType(), True),
+        StructField("review_reason", StringType(), True),
+        StructField("match_key", StringType(), True),
+        StructField("key_columns_used", ArrayType(StringType()), True),
+        StructField("match_rule_description", StringType(), True),
+        StructField("left_source_system", StringType(), True),
+        StructField("right_source_system", StringType(), True),
+        StructField("left_entity_id", StringType(), True),
+        StructField("right_entity_id", StringType(), True),
+        StructField("left_source_record_id", StringType(), True),
+        StructField("right_source_record_id", StringType(), True),
+        StructField("left_source_natural_id", StringType(), True),
+        StructField("right_source_natural_id", StringType(), True),
+        StructField("rapid7_entity_id", StringType(), True),
+        StructField("fortisiem_entity_id", StringType(), True),
+        StructField("sentinalone_entity_id", StringType(), True),
+        StructField("left_duplicate_count", LongType(), True),
+        StructField("right_duplicate_count", LongType(), True),
+        StructField("left_semantic_ambiguity", BooleanType(), True),
+        StructField("right_semantic_ambiguity", BooleanType(), True),
+        StructField("left_preferred_by_site", BooleanType(), True),
+        StructField("right_preferred_by_site", BooleanType(), True),
+        StructField("left_pair_count", LongType(), True),
+        StructField("right_pair_count", LongType(), True),
+        StructField("left_candidate_entity_ids", ArrayType(StringType()), True),
+        StructField("right_candidate_entity_ids", ArrayType(StringType()), True),
+        StructField("left_freshness_ts", TimestampType(), True),
+        StructField("right_freshness_ts", TimestampType(), True),
+        StructField("auto_accepted", BooleanType(), True),
+    ]
+)
+
+METRIC_OUTPUT_SCHEMA = StructType(
+    [
+        StructField("source_pair", StringType(), True),
+        StructField("rule_name", StringType(), True),
+        StructField("rule_rank", IntegerType(), True),
+        StructField("rule_status", StringType(), True),
+        StructField("rule_status_note", StringType(), True),
+        StructField("left_candidate_rows", LongType(), True),
+        StructField("right_candidate_rows", LongType(), True),
+        StructField("left_duplicate_keys", LongType(), True),
+        StructField("right_duplicate_keys", LongType(), True),
+        StructField("left_rows_preferred_by_site", LongType(), True),
+        StructField("right_rows_preferred_by_site", LongType(), True),
+        StructField("auto_matches_count", LongType(), True),
+        StructField("ambiguous_count", LongType(), True),
+        StructField("unmatched_remaining_count", LongType(), True),
+    ]
 )
 
 
-def _method_priority_expr():
-    priority = {
-        "serial_exact": 1,
-        "primary_mac_exact": 2,
-        "primary_mac_in_array": 3,
-        "mac_overlap": 4,
-        "hostname_org": 5,
-        "ip_org": 6,
-        "hostname_site": 7,
-        "access_ip_org": 8,
-        "hostname_os": 9,
-        "ip_site": 10,
-        "access_ip_site": 11,
-        "ip_array_org": 12,
-        "hostname_only": 90,
-        "primary_ip_only": 91,
-        "ip_array_only": 92,
-        "virtual_mac_only": 93,
+@dataclass
+class RuleExecutionResult:
+    accepted_edges: DataFrame
+    review_rows: DataFrame
+    metrics: DataFrame
+    left_residue: DataFrame
+    right_residue: DataFrame
+
+
+def _materialize(df: DataFrame) -> DataFrame:
+    try:
+        return df.localCheckpoint(eager=True)
+    except Exception:
+        cached = df.cache()
+        cached.count()
+        return cached
+
+
+def _empty_match_output(df: DataFrame) -> DataFrame:
+    return df.sparkSession.createDataFrame([], MATCH_OUTPUT_SCHEMA)
+
+
+def _empty_metric_output(df: DataFrame) -> DataFrame:
+    return df.sparkSession.createDataFrame([], METRIC_OUTPUT_SCHEMA)
+
+
+def _pair_name(left_source: str, right_source: str) -> str:
+    return f"{left_source}__{right_source}"
+
+
+def _source_entity_column(source_name: str, left_source: str, right_source: str):
+    if left_source == source_name:
+        return F.col("left_entity_id")
+    if right_source == source_name:
+        return F.col("right_entity_id")
+    return F.lit(None).cast("string")
+
+
+def build_rule_definitions(source_pair: tuple[str, str] | None = None) -> list[MatchRuleDefinition]:
+    rules = sorted(MATCH_RULES, key=lambda rule: (rule.rule_rank, rule.rule_name))
+    if source_pair is None:
+        return rules
+    return [rule for rule in rules if source_pair in rule.applicable_pairs]
+
+
+def _required_columns(rule_def: MatchRuleDefinition) -> set[str]:
+    required = {
+        "entity_id",
+        "source_system",
+        "source_record_id",
+        "source_natural_id",
+        "site_present_flag",
+        "evidence_completeness_score",
+        "freshness_ts",
     }
-    expr = F.lit(999)
-    for method, rank in priority.items():
-        expr = F.when(F.col("match_method") == F.lit(method), F.lit(rank)).otherwise(expr)
-    return expr
+    for key_part in rule_def.key_parts:
+        if rule_def.explode_alias and key_part == rule_def.explode_alias:
+            continue
+        required.add(key_part)
+    if rule_def.explode_array_column:
+        required.add(rule_def.explode_array_column)
+    return required
 
 
-def _score_to_confidence(col_score, col_method):
-    return (
-        F.when(col_method.isin(*TIER1_METHODS), F.lit("deterministic"))
-        .when(col_method.isin(*REVIEW_ONLY_METHODS), F.lit("review"))
-        .when(col_score >= F.lit(80), F.lit("high"))
-        .when(col_score >= F.lit(65), F.lit("medium"))
-        .when(col_score >= F.lit(REVIEW_MIN_SCORE), F.lit("review"))
-        .otherwise(F.lit("low"))
-    )
+def _build_rule_rows(df: DataFrame, rule_def: MatchRuleDefinition) -> DataFrame:
+    stage = df
+    if rule_def.explode_array_column and rule_def.explode_alias:
+        stage = stage.withColumn(rule_def.explode_alias, F.explode_outer(F.col(rule_def.explode_array_column)))
+
+    filters = None
+    for column_name in rule_def.key_parts:
+        column_filter = F.col(column_name).isNotNull()
+        filters = column_filter if filters is None else (filters & column_filter)
+
+    if filters is not None:
+        stage = stage.filter(filters)
+
+    key_struct = F.struct(*[F.col(name).alias(name) for name in rule_def.key_parts])
+    return stage.withColumn("match_key", F.to_json(key_struct))
 
 
-def _auto_merge_flag(col_score, col_method):
-    tier1_auto = col_method.isin(*TIER1_METHODS) & (col_score >= F.lit(AUTO_MERGE_TIER1_MIN_SCORE))
-    tier2_auto = col_method.isin(*TIER2_METHODS) & (col_score >= F.lit(AUTO_MERGE_TIER2_MIN_SCORE))
-    return tier1_auto | tier2_auto
-
-
-def _explode_ip_array(df: DataFrame, id_alias: str, ts_alias: str, ip_col: str, extra_cols: dict | None = None) -> DataFrame:
-    extras = extra_cols or {}
-    select_cols = [
-        F.col("entity_id").alias(id_alias),
-        F.col("source_updated_at").alias(ts_alias),
-        F.explode_outer(F.col(ip_col)).alias("ip"),
+def rank_source_candidates_for_rule(df: DataFrame, rule_def: MatchRuleDefinition) -> DataFrame:
+    stage = _build_rule_rows(df, rule_def)
+    key_window = Window.partitionBy("match_key")
+    semantic_order = [
+        # Business rule: prefer the richer duplicate when site is populated.
+        F.col("site_present_flag").desc(),
+        F.col("evidence_completeness_score").desc(),
+        F.col("freshness_ts").desc_nulls_last(),
     ]
-    select_cols.extend(F.col(src).alias(dst) for src, dst in extras.items())
-    out = df.select(*select_cols).filter(F.col("ip").isNotNull())
-    for dst in extras.values():
-        out = out.filter(F.col(dst).isNotNull())
-    return out
+    stable_order = semantic_order + [
+        F.col("entity_id").asc_nulls_last(),
+        F.col("source_record_id").asc_nulls_last(),
+        F.col("source_natural_id").asc_nulls_last(),
+    ]
 
-
-def _with_entity_columns(df: DataFrame, left_source: str, right_source: str, left_id: str, right_id: str) -> DataFrame:
-    def _col_for(source_name: str):
-        if left_source == source_name:
-            return F.col(left_id)
-        if right_source == source_name:
-            return F.col(right_id)
-        return F.lit(None).cast("string")
-
-    return (
-        df.withColumn("rapid7_entity_id", _col_for("rapid7"))
-        .withColumn("fortisiem_entity_id", _col_for("fortisiem"))
-        .withColumn("sentinalone_entity_id", _col_for("sentinalone"))
+    ranked = (
+        stage.withColumn("semantic_rank", F.dense_rank().over(Window.partitionBy("match_key").orderBy(*semantic_order)))
+        .withColumn("stable_rank", F.row_number().over(Window.partitionBy("match_key").orderBy(*stable_order)))
     )
 
+    # Source-internal uniqueness is evaluated per rule key before any cross-source join happens.
+    key_stats = stage.groupBy("match_key").agg(
+        F.count("*").alias("duplicate_count"),
+        F.array_sort(F.collect_set("entity_id")).alias("candidate_entity_ids"),
+        F.min("site_present_flag").alias("min_site_present_flag"),
+    )
+    top_rank_counts = ranked.filter(F.col("semantic_rank") == F.lit(1)).groupBy("match_key").agg(
+        F.count("*").alias("top_semantic_tie_count")
+    )
 
-def _apply_ambiguity_guard(df: DataFrame, left_id: str, right_id: str) -> DataFrame:
-    left_counts = (
-        df.groupBy(left_id, "match_method")
-        .agg(F.countDistinct(right_id).alias("_left_method_matches"))
-    )
-    right_counts = (
-        df.groupBy(right_id, "match_method")
-        .agg(F.countDistinct(left_id).alias("_right_method_matches"))
-    )
-    guarded = (
-        df.join(left_counts, on=[left_id, "match_method"], how="left")
-        .join(right_counts, on=[right_id, "match_method"], how="left")
+    winners = (
+        ranked.filter(F.col("stable_rank") == F.lit(1))
+        .join(key_stats, on="match_key", how="left")
+        .join(top_rank_counts, on="match_key", how="left")
+        .withColumn("semantic_ambiguity", F.coalesce(F.col("top_semantic_tie_count"), F.lit(0)) > F.lit(1))
         .withColumn(
-            "ambiguity_flag",
-            (F.coalesce(F.col("_left_method_matches"), F.lit(0)) > F.lit(1))
-            | (F.coalesce(F.col("_right_method_matches"), F.lit(0)) > F.lit(1)),
+            "preferred_by_site",
+            (F.col("duplicate_count") > F.lit(1))
+            & (F.col("site_present_flag") == F.lit(1))
+            & (F.col("min_site_present_flag") == F.lit(0))
+            & (~F.col("semantic_ambiguity")),
         )
-        .withColumn("auto_merge", F.when(F.col("ambiguity_flag"), F.lit(False)).otherwise(F.col("auto_merge")))
-        .withColumn("match_review_flag", F.when(F.col("ambiguity_flag"), F.lit(True)).otherwise(F.col("match_review_flag")))
-        .withColumn("match_confidence", F.when(F.col("ambiguity_flag"), F.lit("review")).otherwise(F.col("match_confidence")))
-        .drop("_left_method_matches", "_right_method_matches")
+        .drop("semantic_rank", "stable_rank", "top_semantic_tie_count", "min_site_present_flag")
     )
-    return guarded
+    return _materialize(winners)
 
 
-def _finalize_pair_candidates(
-    candidates: list[DataFrame],
+def qualify_source_keys(df: DataFrame, rule_def: MatchRuleDefinition) -> DataFrame:
+    return rank_source_candidates_for_rule(df, rule_def)
+
+
+def _make_metric_row(
+    df: DataFrame,
+    *,
+    source_pair: str,
+    rule_name: str,
+    rule_rank: int,
+    rule_status: str,
+    rule_status_note: str | None,
+    left_candidate_rows: int,
+    right_candidate_rows: int,
+    left_duplicate_keys: int,
+    right_duplicate_keys: int,
+    left_rows_preferred_by_site: int,
+    right_rows_preferred_by_site: int,
+    auto_matches_count: int,
+    ambiguous_count: int,
+    unmatched_remaining_count: int,
+) -> DataFrame:
+    spark = df.sparkSession
+    row = [
+        (
+            source_pair,
+            rule_name,
+            rule_rank,
+            rule_status,
+            rule_status_note,
+            left_candidate_rows,
+            right_candidate_rows,
+            left_duplicate_keys,
+            right_duplicate_keys,
+            left_rows_preferred_by_site,
+            right_rows_preferred_by_site,
+            auto_matches_count,
+            ambiguous_count,
+            unmatched_remaining_count,
+        )
+    ]
+    return spark.createDataFrame(row, schema=METRIC_OUTPUT_SCHEMA)
+
+
+def _missing_columns(df: DataFrame, rule_def: MatchRuleDefinition) -> list[str]:
+    return sorted(name for name in _required_columns(rule_def) if name not in df.columns)
+
+
+def _count_distinct_rows(df: DataFrame, column_name: str) -> int:
+    return df.select(column_name).distinct().count()
+
+
+def _count_distinct_keys(df: DataFrame) -> int:
+    return df.select("match_key").distinct().count()
+
+
+def _reason_expr(rule_def: MatchRuleDefinition):
+    return F.concat_ws(
+        "|",
+        F.filter(
+            F.array(
+                F.when(F.lit(not rule_def.auto_accept), F.lit("review_only_rule")),
+                F.when(F.col("left_semantic_ambiguity"), F.lit("left_source_ambiguous")),
+                F.when(F.col("right_semantic_ambiguity"), F.lit("right_source_ambiguous")),
+                F.when(F.col("left_pair_count") > F.lit(1), F.lit("left_entity_multi_match")),
+                F.when(F.col("right_pair_count") > F.lit(1), F.lit("right_entity_multi_match")),
+            ),
+            lambda x: x.isNotNull(),
+        ),
+    )
+
+
+def _skipped_rule_outputs(
+    left_df: DataFrame,
+    right_df: DataFrame,
     left_source: str,
     right_source: str,
-    left_id: str,
-    right_id: str,
-) -> DataFrame:
-    unified = None
-    for frame in candidates:
-        if frame is None:
-            continue
-        unified = frame if unified is None else unified.unionByName(frame, allowMissingColumns=True)
-    if unified is None:
-        return None
+    rule_def: MatchRuleDefinition,
+    left_missing: list[str],
+    right_missing: list[str],
+) -> RuleExecutionResult:
+    note_parts = []
+    if left_missing:
+        note_parts.append(f"left_missing={','.join(left_missing)}")
+    if right_missing:
+        note_parts.append(f"right_missing={','.join(right_missing)}")
 
-    method_priority = _method_priority_expr()
-    ranked = (
-        unified
-        .withColumn("match_score", F.col("match_score").cast("int"))
-        .withColumn("_method_priority", method_priority)
+    metrics = _make_metric_row(
+        left_df,
+        source_pair=_pair_name(left_source, right_source),
+        rule_name=rule_def.rule_name,
+        rule_rank=rule_def.rule_rank,
+        rule_status="skipped_missing_columns",
+        rule_status_note="; ".join(note_parts),
+        left_candidate_rows=0,
+        right_candidate_rows=0,
+        left_duplicate_keys=0,
+        right_duplicate_keys=0,
+        left_rows_preferred_by_site=0,
+        right_rows_preferred_by_site=0,
+        auto_matches_count=0,
+        ambiguous_count=0,
+        unmatched_remaining_count=left_df.count() + right_df.count(),
+    )
+    return RuleExecutionResult(
+        accepted_edges=_empty_match_output(left_df),
+        review_rows=_empty_match_output(left_df),
+        metrics=metrics,
+        left_residue=left_df,
+        right_residue=right_df,
     )
 
-    w_pair = Window.partitionBy(left_id, right_id).orderBy(
-        F.col("match_score").desc(),
-        F.col("_method_priority").asc(),
-        F.col("match_method").asc(),
-    )
-    best = ranked.withColumn("_rn_pair", F.row_number().over(w_pair)).filter(F.col("_rn_pair") == 1)
 
-    agg = (
-        ranked.groupBy(left_id, right_id)
-        .agg(
-            F.array_sort(F.array_distinct(F.flatten(F.collect_list(F.coalesce(F.col("match_keys_used"), F.array().cast("array<string>")))))).alias("match_keys_used"),
-            F.array_sort(F.array_distinct(F.flatten(F.collect_list(F.coalesce(F.col("matched_mac_values"), F.array().cast("array<string>")))))).alias("matched_mac_values"),
-            F.max("left_source_updated_at").alias("left_source_updated_at"),
-            F.max("right_source_updated_at").alias("right_source_updated_at"),
+def match_pair_by_rule(
+    left_df: DataFrame,
+    right_df: DataFrame,
+    left_source: str,
+    right_source: str,
+    rule_def: MatchRuleDefinition,
+) -> RuleExecutionResult:
+    left_missing = _missing_columns(left_df, rule_def)
+    right_missing = _missing_columns(right_df, rule_def)
+    if left_missing or right_missing:
+        return _skipped_rule_outputs(left_df, right_df, left_source, right_source, rule_def, left_missing, right_missing)
+
+    left_ranked = qualify_source_keys(left_df, rule_def)
+    right_ranked = qualify_source_keys(right_df, rule_def)
+
+    left_candidate_rows = _count_distinct_rows(left_ranked, "entity_id")
+    right_candidate_rows = _count_distinct_rows(right_ranked, "entity_id")
+    left_duplicate_keys = _count_distinct_keys(left_ranked.filter(F.col("duplicate_count") > F.lit(1)))
+    right_duplicate_keys = _count_distinct_keys(right_ranked.filter(F.col("duplicate_count") > F.lit(1)))
+    left_rows_preferred_by_site = _count_distinct_rows(
+        left_ranked.filter(F.col("preferred_by_site") == F.lit(True)),
+        "entity_id",
+    )
+    right_rows_preferred_by_site = _count_distinct_rows(
+        right_ranked.filter(F.col("preferred_by_site") == F.lit(True)),
+        "entity_id",
+    )
+
+    joined = (
+        left_ranked.alias("l")
+        .join(right_ranked.alias("r"), on="match_key", how="inner")
+        .select(
+            F.lit("pairwise").alias("record_scope"),
+            F.lit(_pair_name(left_source, right_source)).alias("source_pair"),
+            F.lit(rule_def.rule_name).alias("rule_name"),
+            F.lit(rule_def.rule_rank).cast("int").alias("rule_rank"),
+            F.lit("review_only_rule" if not rule_def.auto_accept else "evaluated").alias("rule_status"),
+            F.lit(None).cast("string").alias("rule_status_note"),
+            F.col("match_key"),
+            F.array(*[F.lit(name) for name in rule_def.key_columns_used]).alias("key_columns_used"),
+            F.lit(rule_def.description).alias("match_rule_description"),
+            F.col("l.source_system").alias("left_source_system"),
+            F.col("r.source_system").alias("right_source_system"),
+            F.col("l.entity_id").alias("left_entity_id"),
+            F.col("r.entity_id").alias("right_entity_id"),
+            F.col("l.source_record_id").alias("left_source_record_id"),
+            F.col("r.source_record_id").alias("right_source_record_id"),
+            F.col("l.source_natural_id").alias("left_source_natural_id"),
+            F.col("r.source_natural_id").alias("right_source_natural_id"),
+            F.col("l.duplicate_count").alias("left_duplicate_count"),
+            F.col("r.duplicate_count").alias("right_duplicate_count"),
+            F.col("l.semantic_ambiguity").alias("left_semantic_ambiguity"),
+            F.col("r.semantic_ambiguity").alias("right_semantic_ambiguity"),
+            F.col("l.preferred_by_site").alias("left_preferred_by_site"),
+            F.col("r.preferred_by_site").alias("right_preferred_by_site"),
+            F.col("l.candidate_entity_ids").alias("left_candidate_entity_ids"),
+            F.col("r.candidate_entity_ids").alias("right_candidate_entity_ids"),
+            F.col("l.freshness_ts").alias("left_freshness_ts"),
+            F.col("r.freshness_ts").alias("right_freshness_ts"),
         )
     )
 
-    final_df = (
-        best.drop("_method_priority", "_rn_pair")
-        .drop("match_keys_used", "matched_mac_values", "left_source_updated_at", "right_source_updated_at")
-        .join(agg, on=[left_id, right_id], how="left")
-        .withColumn("match_confidence", _score_to_confidence(F.col("match_score"), F.col("match_method")))
-        .withColumn("auto_merge", _auto_merge_flag(F.col("match_score"), F.col("match_method")))
+    if joined.count() == 0:
+        metrics = _make_metric_row(
+            left_df,
+            source_pair=_pair_name(left_source, right_source),
+            rule_name=rule_def.rule_name,
+            rule_rank=rule_def.rule_rank,
+            rule_status="evaluated" if rule_def.auto_accept else "review_only_rule",
+            rule_status_note=None,
+            left_candidate_rows=left_candidate_rows,
+            right_candidate_rows=right_candidate_rows,
+            left_duplicate_keys=left_duplicate_keys,
+            right_duplicate_keys=right_duplicate_keys,
+            left_rows_preferred_by_site=left_rows_preferred_by_site,
+            right_rows_preferred_by_site=right_rows_preferred_by_site,
+            auto_matches_count=0,
+            ambiguous_count=0,
+            unmatched_remaining_count=left_df.count() + right_df.count(),
+        )
+        return RuleExecutionResult(
+            accepted_edges=_empty_match_output(left_df),
+            review_rows=_empty_match_output(left_df),
+            metrics=metrics,
+            left_residue=left_df,
+            right_residue=right_df,
+        )
+
+    left_pair_counts = joined.groupBy("left_entity_id").agg(F.countDistinct("right_entity_id").alias("left_pair_count"))
+    right_pair_counts = joined.groupBy("right_entity_id").agg(F.countDistinct("left_entity_id").alias("right_pair_count"))
+
+    paired = (
+        joined.join(left_pair_counts, on="left_entity_id", how="left")
+        .join(right_pair_counts, on="right_entity_id", how="left")
+        .withColumn("review_reason", _reason_expr(rule_def))
         .withColumn(
-            "match_review_flag",
-            (~F.col("auto_merge")) & (F.col("match_score") >= F.lit(REVIEW_MIN_SCORE)),
+            "auto_accepted",
+            # Only safe one-to-one deterministic matches are allowed into accepted edges.
+            F.lit(rule_def.auto_accept)
+            & (~F.col("left_semantic_ambiguity"))
+            & (~F.col("right_semantic_ambiguity"))
+            & (F.col("left_pair_count") == F.lit(1))
+            & (F.col("right_pair_count") == F.lit(1)),
         )
-        .withColumn("left_source_system", F.lit(left_source))
-        .withColumn("right_source_system", F.lit(right_source))
-        .withColumnRenamed(left_id, "left_entity_id")
-        .withColumnRenamed(right_id, "right_entity_id")
+        .withColumn("match_status", F.when(F.col("auto_accepted"), F.lit("accepted")).otherwise(F.lit("review")))
+        .withColumn("rapid7_entity_id", _source_entity_column(SOURCE_R7, left_source, right_source))
+        .withColumn("fortisiem_entity_id", _source_entity_column(SOURCE_FSM, left_source, right_source))
+        .withColumn("sentinalone_entity_id", _source_entity_column(SOURCE_S1, left_source, right_source))
+    )
+    paired = _materialize(paired.select(*[field.name for field in MATCH_OUTPUT_SCHEMA.fields]))
+
+    accepted_edges = _materialize(paired.filter(F.col("auto_accepted") == F.lit(True)))
+    review_rows = _materialize(paired.filter(F.col("auto_accepted") == F.lit(False)))
+
+    # Residue progression is driven only by accepted matches; review rows stay available for later stages.
+    accepted_left_ids = accepted_edges.select(F.col("left_entity_id").alias("entity_id")).distinct()
+    accepted_right_ids = accepted_edges.select(F.col("right_entity_id").alias("entity_id")).distinct()
+
+    left_residue = _materialize(left_df.join(accepted_left_ids, on="entity_id", how="left_anti"))
+    right_residue = _materialize(right_df.join(accepted_right_ids, on="entity_id", how="left_anti"))
+
+    metrics = _make_metric_row(
+        left_df,
+        source_pair=_pair_name(left_source, right_source),
+        rule_name=rule_def.rule_name,
+        rule_rank=rule_def.rule_rank,
+        rule_status="evaluated" if rule_def.auto_accept else "review_only_rule",
+        rule_status_note=None,
+        left_candidate_rows=left_candidate_rows,
+        right_candidate_rows=right_candidate_rows,
+        left_duplicate_keys=left_duplicate_keys,
+        right_duplicate_keys=right_duplicate_keys,
+        left_rows_preferred_by_site=left_rows_preferred_by_site,
+        right_rows_preferred_by_site=right_rows_preferred_by_site,
+        auto_matches_count=accepted_edges.count(),
+        ambiguous_count=review_rows.count(),
+        unmatched_remaining_count=left_residue.count() + right_residue.count(),
     )
 
-    final_df = _apply_ambiguity_guard(final_df, "left_entity_id", "right_entity_id")
-    final_df = _with_entity_columns(final_df, left_source, right_source, "left_entity_id", "right_entity_id")
-    return final_df
-
-
-def build_r7_fsm_pairs(r7: DataFrame, fsm: DataFrame) -> DataFrame:
-    r = r7.alias("r")
-    f = fsm.alias("f")
-
-    primary_mac_exact = (
-        r.join(
-            f,
-            (F.col("r.primary_mac_tier1").isNotNull())
-            & (F.col("r.primary_mac_tier1") == F.col("f.primary_mac_tier1")),
-            "inner",
-        )
-        .select(
-            F.col("r.entity_id").alias("r7_id"),
-            F.col("f.entity_id").alias("fsm_id"),
-            F.lit("primary_mac_exact").alias("match_method"),
-            F.lit(MATCH_SCORES["primary_mac_exact"]).cast("int").alias("match_score"),
-            F.array(F.lit("primary_mac")).alias("match_keys_used"),
-            F.array(F.col("r.primary_mac_tier1")).alias("matched_mac_values"),
-            F.col("r.source_updated_at").alias("left_source_updated_at"),
-            F.col("f.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    r_mac = r.select(F.col("entity_id").alias("r7_id"), F.col("source_updated_at"), F.explode_outer("physical_mac_addresses_tier1").alias("mac")).filter(F.col("mac").isNotNull())
-    f_mac = f.select(F.col("entity_id").alias("fsm_id"), F.col("source_updated_at"), F.explode_outer("physical_mac_addresses_tier1").alias("mac")).filter(F.col("mac").isNotNull())
-    mac_overlap = (
-        r_mac.alias("r")
-        .join(f_mac.alias("f"), on="mac", how="inner")
-        .groupBy("r.r7_id", "f.fsm_id")
-        .agg(
-            F.array_sort(F.array_distinct(F.collect_set("mac"))).alias("matched_mac_values"),
-            F.max("r.source_updated_at").alias("left_source_updated_at"),
-            F.max("f.source_updated_at").alias("right_source_updated_at"),
-        )
-        .select(
-            F.col("r7_id"),
-            F.col("fsm_id"),
-            F.lit("mac_overlap").alias("match_method"),
-            F.lit(MATCH_SCORES["mac_overlap"]).cast("int").alias("match_score"),
-            F.array(F.lit("mac_addresses")).alias("match_keys_used"),
-            F.col("matched_mac_values"),
-            F.col("left_source_updated_at"),
-            F.col("right_source_updated_at"),
-        )
-    )
-
-    ip_org = (
-        r.join(
-            f,
-            (F.col("r.primary_ip_norm").isNotNull())
-            & (F.col("r.primary_ip_norm") == F.col("f.access_ip_norm"))
-            & (F.col("r.org_name_norm").isNotNull())
-            & (F.col("r.org_name_norm") == F.col("f.org_name_norm")),
-            "inner",
-        )
-        .select(
-            F.col("r.entity_id").alias("r7_id"),
-            F.col("f.entity_id").alias("fsm_id"),
-            F.lit("ip_org").alias("match_method"),
-            F.lit(MATCH_SCORES["ip_org"]).cast("int").alias("match_score"),
-            F.array(F.lit("primary_ip"), F.lit("access_ip"), F.lit("normalised_org_name")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("r.source_updated_at").alias("left_source_updated_at"),
-            F.col("f.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    r_ip_org = _explode_ip_array(r7, "r7_id", "left_source_updated_at", "ip_addresses_norm", {"org_name_norm": "org_norm"})
-    f_ip_org = _explode_ip_array(fsm, "fsm_id", "right_source_updated_at", "ip_addresses_norm", {"org_name_norm": "org_norm"})
-    ip_array_org = (
-        r_ip_org.alias("r")
-        .join(f_ip_org.alias("f"), on=["ip", "org_norm"], how="inner")
-        .groupBy("r.r7_id", "f.fsm_id")
-        .agg(
-            F.max("r.left_source_updated_at").alias("left_source_updated_at"),
-            F.max("f.right_source_updated_at").alias("right_source_updated_at"),
-        )
-        .select(
-            F.col("r7_id"),
-            F.col("fsm_id"),
-            F.lit("ip_array_org").alias("match_method"),
-            F.lit(MATCH_SCORES["ip_array_org"]).cast("int").alias("match_score"),
-            F.array(F.lit("ip_addresses"), F.lit("normalised_org_name")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("left_source_updated_at"),
-            F.col("right_source_updated_at"),
-        )
-    )
-
-    ip_site = (
-        r.join(
-            f,
-            (F.col("r.primary_ip_norm").isNotNull())
-            & (F.col("r.primary_ip_norm") == F.col("f.access_ip_norm"))
-            & (F.col("r.site_name_norm").isNotNull())
-            & (F.col("r.site_name_norm") == F.col("f.site_name_norm")),
-            "inner",
-        )
-        .select(
-            F.col("r.entity_id").alias("r7_id"),
-            F.col("f.entity_id").alias("fsm_id"),
-            F.lit("ip_site").alias("match_method"),
-            F.lit(MATCH_SCORES["ip_site"]).cast("int").alias("match_score"),
-            F.array(F.lit("primary_ip"), F.lit("access_ip"), F.lit("site_name")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("r.source_updated_at").alias("left_source_updated_at"),
-            F.col("f.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    r_ip_any = _explode_ip_array(r7, "r7_id", "left_source_updated_at", "ip_addresses_norm")
-    f_ip_any = _explode_ip_array(fsm, "fsm_id", "right_source_updated_at", "ip_addresses_norm")
-    ip_array_only = (
-        r_ip_any.alias("r")
-        .join(f_ip_any.alias("f"), on="ip", how="inner")
-        .groupBy("r.r7_id", "f.fsm_id")
-        .agg(
-            F.max("r.left_source_updated_at").alias("left_source_updated_at"),
-            F.max("f.right_source_updated_at").alias("right_source_updated_at"),
-        )
-        .select(
-            F.col("r7_id"),
-            F.col("fsm_id"),
-            F.lit("ip_array_only").alias("match_method"),
-            F.lit(MATCH_SCORES["ip_array_only"]).cast("int").alias("match_score"),
-            F.array(F.lit("ip_addresses")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("left_source_updated_at"),
-            F.col("right_source_updated_at"),
-        )
-    )
-
-    return _finalize_pair_candidates(
-        [primary_mac_exact, mac_overlap, ip_org, ip_array_org, ip_site, ip_array_only],
-        left_source="rapid7",
-        right_source="fortisiem",
-        left_id="r7_id",
-        right_id="fsm_id",
+    return RuleExecutionResult(
+        accepted_edges=accepted_edges,
+        review_rows=review_rows,
+        metrics=metrics,
+        left_residue=left_residue,
+        right_residue=right_residue,
     )
 
 
-def build_r7_s1_pairs(r7: DataFrame, s1: DataFrame) -> DataFrame:
-    r = r7.alias("r")
-    s = s1.alias("s")
+def _union_frames(base_df: DataFrame, frames: list[DataFrame], empty_builder) -> DataFrame:
+    non_empty = [frame for frame in frames if frame is not None]
+    if not non_empty:
+        return empty_builder(base_df)
 
-    r_mac = r.select(F.col("entity_id").alias("r7_id"), F.col("source_updated_at"), F.explode_outer("physical_mac_addresses_tier1").alias("mac")).filter(F.col("mac").isNotNull())
-    s_mac = s.select(F.col("entity_id").alias("s1_id"), F.col("source_updated_at"), F.explode_outer("physical_mac_addresses_tier1").alias("mac")).filter(F.col("mac").isNotNull())
-    mac_overlap = (
-        r_mac.alias("r")
-        .join(s_mac.alias("s"), on="mac", how="inner")
-        .groupBy("r.r7_id", "s.s1_id")
-        .agg(
-            F.array_sort(F.array_distinct(F.collect_set("mac"))).alias("matched_mac_values"),
-            F.max("r.source_updated_at").alias("left_source_updated_at"),
-            F.max("s.source_updated_at").alias("right_source_updated_at"),
-        )
-        .select(
-            F.col("r7_id"),
-            F.col("s1_id"),
-            F.lit("mac_overlap").alias("match_method"),
-            F.lit(MATCH_SCORES["mac_overlap"]).cast("int").alias("match_score"),
-            F.array(F.lit("mac_addresses")).alias("match_keys_used"),
-            F.col("matched_mac_values"),
-            F.col("left_source_updated_at"),
-            F.col("right_source_updated_at"),
-        )
-    )
-
-    primary_mac_in_array = (
-        r.join(
-            s,
-            (F.col("r.primary_mac_tier1").isNotNull())
-            & F.array_contains(F.col("s.physical_mac_addresses_tier1"), F.col("r.primary_mac_tier1")),
-            "inner",
-        )
-        .select(
-            F.col("r.entity_id").alias("r7_id"),
-            F.col("s.entity_id").alias("s1_id"),
-            F.lit("primary_mac_in_array").alias("match_method"),
-            F.lit(MATCH_SCORES["primary_mac_in_array"]).cast("int").alias("match_score"),
-            F.array(F.lit("primary_mac"), F.lit("mac_addresses")).alias("match_keys_used"),
-            F.array(F.col("r.primary_mac_tier1")).alias("matched_mac_values"),
-            F.col("r.source_updated_at").alias("left_source_updated_at"),
-            F.col("s.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    hostname_org = (
-        r.join(
-            s,
-            (F.col("r.primary_hostname_norm").isNotNull())
-            & (F.col("r.primary_hostname_norm") == F.col("s.primary_hostname_norm"))
-            & (F.col("r.org_name_norm").isNotNull())
-            & (F.col("r.org_name_norm") == F.col("s.org_name_norm")),
-            "inner",
-        )
-        .select(
-            F.col("r.entity_id").alias("r7_id"),
-            F.col("s.entity_id").alias("s1_id"),
-            F.lit("hostname_org").alias("match_method"),
-            F.lit(MATCH_SCORES["hostname_org"]).cast("int").alias("match_score"),
-            F.array(F.lit("primary_hostname"), F.lit("normalised_org_name")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("r.source_updated_at").alias("left_source_updated_at"),
-            F.col("s.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    hostname_site = (
-        r.join(
-            s,
-            (F.col("r.primary_hostname_norm").isNotNull())
-            & (F.col("r.primary_hostname_norm") == F.col("s.primary_hostname_norm"))
-            & (F.col("r.site_name_norm").isNotNull())
-            & (F.col("r.site_name_norm") == F.col("s.site_name_norm")),
-            "inner",
-        )
-        .select(
-            F.col("r.entity_id").alias("r7_id"),
-            F.col("s.entity_id").alias("s1_id"),
-            F.lit("hostname_site").alias("match_method"),
-            F.lit(MATCH_SCORES["hostname_site"]).cast("int").alias("match_score"),
-            F.array(F.lit("primary_hostname"), F.lit("site_name")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("r.source_updated_at").alias("left_source_updated_at"),
-            F.col("s.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    hostname_os = (
-        r.join(
-            s,
-            (F.col("r.primary_hostname_norm").isNotNull())
-            & (F.col("r.primary_hostname_norm") == F.col("s.primary_hostname_norm"))
-            & (F.col("r.os_family_norm").isNotNull())
-            & (F.col("r.os_family_norm") == F.col("s.os_family_norm")),
-            "inner",
-        )
-        .select(
-            F.col("r.entity_id").alias("r7_id"),
-            F.col("s.entity_id").alias("s1_id"),
-            F.lit("hostname_os").alias("match_method"),
-            F.lit(MATCH_SCORES["hostname_os"]).cast("int").alias("match_score"),
-            F.array(F.lit("primary_hostname"), F.lit("os_family")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("r.source_updated_at").alias("left_source_updated_at"),
-            F.col("s.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    ip_org = (
-        r.join(
-            s,
-            (F.col("r.primary_ip_norm").isNotNull())
-            & (F.col("r.primary_ip_norm") == F.col("s.primary_ip_norm"))
-            & (F.col("r.primary_ip_norm").rlike(PRIVATE_IP_REGEX))
-            & (F.col("r.org_name_norm").isNotNull())
-            & (F.col("r.org_name_norm") == F.col("s.org_name_norm")),
-            "inner",
-        )
-        .select(
-            F.col("r.entity_id").alias("r7_id"),
-            F.col("s.entity_id").alias("s1_id"),
-            F.lit("ip_org").alias("match_method"),
-            F.lit(75).cast("int").alias("match_score"),
-            F.array(F.lit("primary_ip"), F.lit("normalised_org_name")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("r.source_updated_at").alias("left_source_updated_at"),
-            F.col("s.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    ip_site = (
-        r.join(
-            s,
-            (F.col("r.primary_ip_norm").isNotNull())
-            & (F.col("r.primary_ip_norm") == F.col("s.primary_ip_norm"))
-            & (F.col("r.site_name_norm").isNotNull())
-            & (F.col("r.site_name_norm") == F.col("s.site_name_norm")),
-            "inner",
-        )
-        .select(
-            F.col("r.entity_id").alias("r7_id"),
-            F.col("s.entity_id").alias("s1_id"),
-            F.lit("ip_site").alias("match_method"),
-            F.lit(65).cast("int").alias("match_score"),
-            F.array(F.lit("primary_ip"), F.lit("site_name")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("r.source_updated_at").alias("left_source_updated_at"),
-            F.col("s.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    hostname_only = (
-        r.join(
-            s,
-            (F.col("r.primary_hostname_norm").isNotNull())
-            & (F.col("r.primary_hostname_norm") == F.col("s.primary_hostname_norm")),
-            "inner",
-        )
-        .select(
-            F.col("r.entity_id").alias("r7_id"),
-            F.col("s.entity_id").alias("s1_id"),
-            F.lit("hostname_only").alias("match_method"),
-            F.lit(MATCH_SCORES["hostname_only"]).cast("int").alias("match_score"),
-            F.array(F.lit("primary_hostname")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("r.source_updated_at").alias("left_source_updated_at"),
-            F.col("s.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    return _finalize_pair_candidates(
-        [mac_overlap, primary_mac_in_array, hostname_org, hostname_site, hostname_os, ip_org, ip_site, hostname_only],
-        left_source="rapid7",
-        right_source="sentinalone",
-        left_id="r7_id",
-        right_id="s1_id",
-    )
+    result = non_empty[0]
+    for frame in non_empty[1:]:
+        result = result.unionByName(frame, allowMissingColumns=True)
+    return _materialize(result)
 
 
-def build_fsm_s1_pairs(fsm: DataFrame, s1: DataFrame) -> DataFrame:
-    f = fsm.alias("f")
-    s = s1.alias("s")
+def run_pairwise_rule_hierarchy(
+    left_df: DataFrame,
+    right_df: DataFrame,
+    left_source: str,
+    right_source: str,
+    rules: list[MatchRuleDefinition],
+) -> RuleExecutionResult:
+    accepted_frames: list[DataFrame] = []
+    review_frames: list[DataFrame] = []
+    metric_frames: list[DataFrame] = []
 
-    serial_exact = (
-        f.join(
-            s,
-            (F.col("f.serial_norm").isNotNull())
-            & (F.col("f.serial_norm") == F.col("s.serial_norm")),
-            "inner",
-        )
-        .select(
-            F.col("f.entity_id").alias("fsm_id"),
-            F.col("s.entity_id").alias("s1_id"),
-            F.lit("serial_exact").alias("match_method"),
-            F.lit(MATCH_SCORES["serial_exact"]).cast("int").alias("match_score"),
-            F.array(F.lit("serial_number")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("f.source_updated_at").alias("left_source_updated_at"),
-            F.col("s.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
+    left_residue = _materialize(left_df)
+    right_residue = _materialize(right_df)
 
-    primary_mac_in_array = (
-        f.join(
-            s,
-            (F.col("f.primary_mac_tier1").isNotNull())
-            & F.array_contains(F.col("s.physical_mac_addresses_tier1"), F.col("f.primary_mac_tier1")),
-            "inner",
-        )
-        .select(
-            F.col("f.entity_id").alias("fsm_id"),
-            F.col("s.entity_id").alias("s1_id"),
-            F.lit("primary_mac_in_array").alias("match_method"),
-            F.lit(MATCH_SCORES["primary_mac_in_array"]).cast("int").alias("match_score"),
-            F.array(F.lit("primary_mac"), F.lit("mac_addresses")).alias("match_keys_used"),
-            F.array(F.col("f.primary_mac_tier1")).alias("matched_mac_values"),
-            F.col("f.source_updated_at").alias("left_source_updated_at"),
-            F.col("s.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
+    for rule_def in rules:
+        result = match_pair_by_rule(left_residue, right_residue, left_source, right_source, rule_def)
+        accepted_frames.append(result.accepted_edges)
+        review_frames.append(result.review_rows)
+        metric_frames.append(result.metrics)
+        left_residue = result.left_residue
+        right_residue = result.right_residue
 
-    f_mac = f.select(F.col("entity_id").alias("fsm_id"), F.col("source_updated_at"), F.explode_outer("physical_mac_addresses_tier1").alias("mac")).filter(F.col("mac").isNotNull())
-    s_mac = s.select(F.col("entity_id").alias("s1_id"), F.col("source_updated_at"), F.explode_outer("physical_mac_addresses_tier1").alias("mac")).filter(F.col("mac").isNotNull())
-    mac_overlap = (
-        f_mac.alias("f")
-        .join(s_mac.alias("s"), on="mac", how="inner")
-        .groupBy("f.fsm_id", "s.s1_id")
-        .agg(
-            F.array_sort(F.array_distinct(F.collect_set("mac"))).alias("matched_mac_values"),
-            F.max("f.source_updated_at").alias("left_source_updated_at"),
-            F.max("s.source_updated_at").alias("right_source_updated_at"),
-        )
-        .select(
-            F.col("fsm_id"),
-            F.col("s1_id"),
-            F.lit("mac_overlap").alias("match_method"),
-            F.lit(MATCH_SCORES["mac_overlap"]).cast("int").alias("match_score"),
-            F.array(F.lit("mac_addresses")).alias("match_keys_used"),
-            F.col("matched_mac_values"),
-            F.col("left_source_updated_at"),
-            F.col("right_source_updated_at"),
-        )
-    )
+    accepted_edges = _union_frames(left_df, accepted_frames, _empty_match_output)
+    review_rows = _union_frames(left_df, review_frames, _empty_match_output)
+    metrics = _union_frames(left_df, metric_frames, _empty_metric_output)
 
-    access_ip_org = (
-        f.join(
-            s,
-            (F.col("f.access_ip_norm").isNotNull())
-            & (F.col("f.access_ip_norm") == F.col("s.access_ip_norm"))
-            & (F.col("f.org_name_norm").isNotNull())
-            & (F.col("f.org_name_norm") == F.col("s.org_name_norm")),
-            "inner",
-        )
-        .select(
-            F.col("f.entity_id").alias("fsm_id"),
-            F.col("s.entity_id").alias("s1_id"),
-            F.lit("access_ip_org").alias("match_method"),
-            F.lit(MATCH_SCORES["access_ip_org"]).cast("int").alias("match_score"),
-            F.array(F.lit("access_ip"), F.lit("normalised_org_name")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("f.source_updated_at").alias("left_source_updated_at"),
-            F.col("s.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    f_ip_org = _explode_ip_array(fsm, "fsm_id", "left_source_updated_at", "ip_addresses_norm", {"org_name_norm": "org_norm"})
-    s_ip_org = _explode_ip_array(s1, "s1_id", "right_source_updated_at", "ip_addresses_norm", {"org_name_norm": "org_norm"})
-    ip_array_org = (
-        f_ip_org.alias("f")
-        .join(s_ip_org.alias("s"), on=["ip", "org_norm"], how="inner")
-        .groupBy("f.fsm_id", "s.s1_id")
-        .agg(
-            F.max("f.left_source_updated_at").alias("left_source_updated_at"),
-            F.max("s.right_source_updated_at").alias("right_source_updated_at"),
-        )
-        .select(
-            F.col("fsm_id"),
-            F.col("s1_id"),
-            F.lit("ip_array_org").alias("match_method"),
-            F.lit(MATCH_SCORES["ip_array_org"]).cast("int").alias("match_score"),
-            F.array(F.lit("ip_addresses"), F.lit("normalised_org_name")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("left_source_updated_at"),
-            F.col("right_source_updated_at"),
-        )
-    )
-
-    access_ip_site = (
-        f.join(
-            s,
-            (F.col("f.access_ip_norm").isNotNull())
-            & (F.col("f.access_ip_norm") == F.col("s.access_ip_norm"))
-            & (F.col("f.site_name_norm").isNotNull())
-            & (F.col("f.site_name_norm") == F.col("s.site_name_norm")),
-            "inner",
-        )
-        .select(
-            F.col("f.entity_id").alias("fsm_id"),
-            F.col("s.entity_id").alias("s1_id"),
-            F.lit("access_ip_site").alias("match_method"),
-            F.lit(MATCH_SCORES["access_ip_site"]).cast("int").alias("match_score"),
-            F.array(F.lit("access_ip"), F.lit("site_name")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("f.source_updated_at").alias("left_source_updated_at"),
-            F.col("s.source_updated_at").alias("right_source_updated_at"),
-        )
-    )
-
-    f_ip_any = _explode_ip_array(fsm, "fsm_id", "left_source_updated_at", "ip_addresses_norm")
-    s_ip_any = _explode_ip_array(s1, "s1_id", "right_source_updated_at", "ip_addresses_norm")
-    ip_array_only = (
-        f_ip_any.alias("f")
-        .join(s_ip_any.alias("s"), on="ip", how="inner")
-        .groupBy("f.fsm_id", "s.s1_id")
-        .agg(
-            F.max("f.left_source_updated_at").alias("left_source_updated_at"),
-            F.max("s.right_source_updated_at").alias("right_source_updated_at"),
-        )
-        .select(
-            F.col("fsm_id"),
-            F.col("s1_id"),
-            F.lit("ip_array_only").alias("match_method"),
-            F.lit(MATCH_SCORES["ip_array_only"]).cast("int").alias("match_score"),
-            F.array(F.lit("ip_addresses")).alias("match_keys_used"),
-            F.array().cast("array<string>").alias("matched_mac_values"),
-            F.col("left_source_updated_at"),
-            F.col("right_source_updated_at"),
-        )
-    )
-
-    return _finalize_pair_candidates(
-        [serial_exact, primary_mac_in_array, mac_overlap, access_ip_org, ip_array_org, access_ip_site, ip_array_only],
-        left_source="fortisiem",
-        right_source="sentinalone",
-        left_id="fsm_id",
-        right_id="s1_id",
+    return RuleExecutionResult(
+        accepted_edges=accepted_edges,
+        review_rows=review_rows,
+        metrics=metrics,
+        left_residue=left_residue,
+        right_residue=right_residue,
     )

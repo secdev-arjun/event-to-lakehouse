@@ -10,16 +10,20 @@ if BASE_DIR not in sys.path:
 os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 
 from gold.config import (
-    RAPID7_SILVER_CURRENT_TABLE,
     FORTI_SILVER_CURRENT_TABLE,
-    SENTINEL_SILVER_CURRENT_TABLE,
     GOLD_ASSETS_CURRENT_TABLE,
+    GOLD_ASSETS_UNMATCHED_TABLE,
+    GOLD_MATCH_CANDIDATES_TABLE,
+    GOLD_MATCH_METRICS_TABLE,
+    GOLD_MATCH_REVIEW_TABLE,
+    RAPID7_SILVER_CURRENT_TABLE,
+    SENTINEL_SILVER_CURRENT_TABLE,
 )
 from gold.readers import read_table
-from gold.matching import match_sources
+from gold.matching import build_unmatched_rows, match_sources
 from gold.grouping import build_entity_groups
 from gold.survivorship import build_gold_rows
-from gold.writer import write_gold_current
+from gold.writer import write_gold_current, write_gold_table
 
 
 spark = (
@@ -48,35 +52,30 @@ def main():
     rapid7_df = read_table(spark, RAPID7_SILVER_CURRENT_TABLE)
     forti_df = read_table(spark, FORTI_SILVER_CURRENT_TABLE)
 
-    (
-        sentinel_prepared,
-        rapid7_prepared,
-        forti_prepared,
-        r7_fsm_pairs,
-        r7_s1_pairs,
-        fsm_s1_pairs,
-        all_pairs,
-    ) = match_sources(
-        sentinel_df, rapid7_df, forti_df
-    )
+    matching_outputs = match_sources(sentinel_df, rapid7_df, forti_df)
 
-    groups = build_entity_groups(
-        rapid7_prepared,
-        forti_prepared,
-        sentinel_prepared,
-        r7_fsm_pairs,
-        r7_s1_pairs,
-        fsm_s1_pairs,
+    unmatched_rows = build_unmatched_rows(
+        matching_outputs.sentinel_prepared,
+        matching_outputs.rapid7_prepared,
+        matching_outputs.forti_prepared,
+        matching_outputs.accepted_edges,
     )
+    groups, component_review = build_entity_groups(matching_outputs.accepted_edges)
 
     gold_df = build_gold_rows(
-        sentinel_prepared,
-        rapid7_prepared,
-        forti_prepared,
+        matching_outputs.sentinel_prepared,
+        matching_outputs.rapid7_prepared,
+        matching_outputs.forti_prepared,
         groups,
-        all_pairs,
+        matching_outputs.accepted_edges,
     )
 
+    review_df = matching_outputs.review_rows.unionByName(component_review, allowMissingColumns=True)
+
+    write_gold_table(matching_outputs.accepted_edges, GOLD_MATCH_CANDIDATES_TABLE)
+    write_gold_table(review_df, GOLD_MATCH_REVIEW_TABLE)
+    write_gold_table(unmatched_rows, GOLD_ASSETS_UNMATCHED_TABLE)
+    write_gold_table(matching_outputs.metrics, GOLD_MATCH_METRICS_TABLE)
     write_gold_current(gold_df, GOLD_ASSETS_CURRENT_TABLE)
 
 

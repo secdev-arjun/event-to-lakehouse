@@ -41,7 +41,11 @@ def align_df_to_table(df: DataFrame, table_name: str) -> DataFrame:
     return out.select(*ordered_cols)
 
 
-def write_gold_current(df: DataFrame, table_name: str):
+def write_gold_table(df: DataFrame, table_name: str):
     ensure_table(df, table_name)
     aligned = align_df_to_table(df, table_name)
     aligned.writeTo(table_name).overwrite(F.lit(True))
+
+
+def write_gold_current(df: DataFrame, table_name: str):
+    write_gold_table(df, table_name)

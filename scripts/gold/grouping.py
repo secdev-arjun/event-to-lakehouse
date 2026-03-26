@@ -1,17 +1,71 @@
-from functools import reduce
+from __future__ import annotations
 
 from pyspark.sql import DataFrame, functions as F
-from pyspark.sql.window import Window
+from pyspark.sql.types import (
+    ArrayType,
+    BooleanType,
+    IntegerType,
+    LongType,
+    StringType,
+    StructField,
+    StructType,
+    TimestampType,
+)
+
+from .config import MAX_COMPONENT_ITERATIONS, SOURCE_FSM, SOURCE_R7, SOURCE_S1
 
 
-def _empty_str_array():
-    return F.array().cast("array<string>")
+COMPONENT_REVIEW_SCHEMA = StructType(
+    [
+        StructField("record_scope", StringType(), True),
+        StructField("source_pair", StringType(), True),
+        StructField("rule_name", StringType(), True),
+        StructField("rule_rank", IntegerType(), True),
+        StructField("rule_status", StringType(), True),
+        StructField("rule_status_note", StringType(), True),
+        StructField("match_status", StringType(), True),
+        StructField("review_reason", StringType(), True),
+        StructField("match_key", StringType(), True),
+        StructField("key_columns_used", ArrayType(StringType()), True),
+        StructField("match_rule_description", StringType(), True),
+        StructField("left_source_system", StringType(), True),
+        StructField("right_source_system", StringType(), True),
+        StructField("left_entity_id", StringType(), True),
+        StructField("right_entity_id", StringType(), True),
+        StructField("left_source_record_id", StringType(), True),
+        StructField("right_source_record_id", StringType(), True),
+        StructField("left_source_natural_id", StringType(), True),
+        StructField("right_source_natural_id", StringType(), True),
+        StructField("rapid7_entity_id", StringType(), True),
+        StructField("fortisiem_entity_id", StringType(), True),
+        StructField("sentinalone_entity_id", StringType(), True),
+        StructField("left_duplicate_count", LongType(), True),
+        StructField("right_duplicate_count", LongType(), True),
+        StructField("left_semantic_ambiguity", BooleanType(), True),
+        StructField("right_semantic_ambiguity", BooleanType(), True),
+        StructField("left_preferred_by_site", BooleanType(), True),
+        StructField("right_preferred_by_site", BooleanType(), True),
+        StructField("left_pair_count", LongType(), True),
+        StructField("right_pair_count", LongType(), True),
+        StructField("left_candidate_entity_ids", ArrayType(StringType()), True),
+        StructField("right_candidate_entity_ids", ArrayType(StringType()), True),
+        StructField("left_freshness_ts", TimestampType(), True),
+        StructField("right_freshness_ts", TimestampType(), True),
+        StructField("auto_accepted", BooleanType(), True),
+        StructField("component_id", StringType(), True),
+        StructField("source_count", IntegerType(), True),
+        StructField("edge_count", IntegerType(), True),
+        StructField("matched_sources", ArrayType(StringType()), True),
+        StructField("match_rule_summary", ArrayType(StringType()), True),
+        StructField("min_match_rule_rank", IntegerType(), True),
+        StructField("rapid7_entity_ids", ArrayType(StringType()), True),
+        StructField("fortisiem_entity_ids", ArrayType(StringType()), True),
+        StructField("sentinalone_entity_ids", ArrayType(StringType()), True),
+    ]
+)
 
 
 def _materialize(df: DataFrame) -> DataFrame:
-    """
-    Truncate long lineage to keep Catalyst planning stable for chained gold grouping joins.
-    """
     try:
         return df.localCheckpoint(eager=True)
     except Exception:
@@ -20,294 +74,245 @@ def _materialize(df: DataFrame) -> DataFrame:
         return cached
 
 
-def _select_best_auto_pairs(df: DataFrame, left_id_col: str, right_id_col: str, prefix: str) -> DataFrame:
-    auto_df = df.filter(F.col("auto_merge") == F.lit(True))
-    w_left = Window.partitionBy(left_id_col).orderBy(
-        F.col("match_score").desc(),
-        F.col("match_method").asc(),
-    )
-    one_left = auto_df.withColumn("_rn_left", F.row_number().over(w_left)).filter(F.col("_rn_left") == 1)
-    w_right = Window.partitionBy(right_id_col).orderBy(
-        F.col("match_score").desc(),
-        F.col("match_method").asc(),
-    )
-    one_to_one = one_left.withColumn("_rn_right", F.row_number().over(w_right)).filter(F.col("_rn_right") == 1)
-    return one_to_one.select(
-        F.col(left_id_col),
-        F.col(right_id_col),
-        F.col("match_method").alias(f"{prefix}match_method"),
-        F.col("match_score").alias(f"{prefix}match_score"),
-        F.col("match_confidence").alias(f"{prefix}match_confidence"),
-        F.col("match_review_flag").alias(f"{prefix}match_review_flag"),
-        F.col("match_keys_used").alias(f"{prefix}match_keys_used"),
-        F.col("matched_mac_values").alias(f"{prefix}matched_mac_values"),
-        F.col("ambiguity_flag").alias(f"{prefix}ambiguity_flag"),
-    )
+def _empty_component_review(df: DataFrame) -> DataFrame:
+    return df.sparkSession.createDataFrame([], COMPONENT_REVIEW_SCHEMA)
 
 
-def _merge_arrays(*arr_cols):
-    wrapped = [F.coalesce(c.cast("array<string>"), _empty_str_array()) for c in arr_cols]
-    return F.array_sort(F.array_distinct(F.flatten(F.array(*wrapped))))
+def _build_nodes(accepted_edges: DataFrame) -> DataFrame:
+    left_nodes = accepted_edges.select(
+        F.concat_ws("|", F.col("left_source_system"), F.col("left_entity_id")).alias("node_id"),
+        F.col("left_source_system").alias("source_system"),
+        F.col("left_entity_id").alias("entity_id"),
+    )
+    right_nodes = accepted_edges.select(
+        F.concat_ws("|", F.col("right_source_system"), F.col("right_entity_id")).alias("node_id"),
+        F.col("right_source_system").alias("source_system"),
+        F.col("right_entity_id").alias("entity_id"),
+    )
+    return _materialize(left_nodes.unionByName(right_nodes).distinct())
 
 
-def _confidence_from_score(score_col, review_col, source_count_col):
-    return (
-        F.when(source_count_col == F.lit(1), F.lit("singleton"))
-        .when(review_col, F.lit("review"))
-        .when(score_col >= F.lit(95), F.lit("deterministic"))
-        .when(score_col >= F.lit(80), F.lit("high"))
-        .when(score_col >= F.lit(65), F.lit("medium"))
-        .otherwise(F.lit("review"))
+def _build_edges(accepted_edges: DataFrame) -> DataFrame:
+    direct_edges = accepted_edges.select(
+        F.concat_ws("|", F.col("left_source_system"), F.col("left_entity_id")).alias("src_node_id"),
+        F.concat_ws("|", F.col("right_source_system"), F.col("right_entity_id")).alias("dst_node_id"),
+    ).distinct()
+    reverse_edges = direct_edges.select(
+        F.col("dst_node_id").alias("src_node_id"),
+        F.col("src_node_id").alias("dst_node_id"),
+    )
+    return _materialize(direct_edges.unionByName(reverse_edges).distinct())
+
+
+def _compute_component_labels(nodes: DataFrame, edges: DataFrame) -> DataFrame:
+    labels = _materialize(nodes.select("node_id", F.col("node_id").alias("component_label")))
+    for _ in range(MAX_COMPONENT_ITERATIONS):
+        propagated = edges.alias("e").join(
+            labels.alias("l"),
+            F.col("e.src_node_id") == F.col("l.node_id"),
+            "inner",
+        ).select(
+            F.col("e.dst_node_id").alias("node_id"),
+            F.col("l.component_label"),
+        )
+        next_labels = _materialize(
+            labels.unionByName(propagated)
+            .groupBy("node_id")
+            .agg(F.min("component_label").alias("component_label"))
+        )
+        changes = next_labels.alias("n").join(
+            labels.alias("l"),
+            on="node_id",
+            how="inner",
+        ).filter(F.col("n.component_label") != F.col("l.component_label")).count()
+        labels = next_labels
+        if changes == 0:
+            break
+    return labels
+
+
+def _component_members(nodes: DataFrame, labels: DataFrame) -> DataFrame:
+    members = nodes.join(labels, on="node_id", how="inner")
+    return _materialize(
+        members.groupBy("component_label").agg(
+            F.array_sort(F.collect_set("node_id")).alias("member_node_ids"),
+            F.array_sort(
+                F.filter(
+                    F.collect_set(F.when(F.col("source_system") == F.lit(SOURCE_R7), F.col("entity_id"))),
+                    lambda x: x.isNotNull(),
+                )
+            ).alias("rapid7_entity_ids"),
+            F.array_sort(
+                F.filter(
+                    F.collect_set(F.when(F.col("source_system") == F.lit(SOURCE_FSM), F.col("entity_id"))),
+                    lambda x: x.isNotNull(),
+                )
+            ).alias("fortisiem_entity_ids"),
+            F.array_sort(
+                F.filter(
+                    F.collect_set(F.when(F.col("source_system") == F.lit(SOURCE_S1), F.col("entity_id"))),
+                    lambda x: x.isNotNull(),
+                )
+            ).alias("sentinalone_entity_ids"),
+        )
     )
 
 
-def _build_match_fields(df: DataFrame) -> DataFrame:
-    methods = F.filter(
-        F.array(F.col("m1"), F.col("m2"), F.col("m3")),
-        lambda x: x.isNotNull(),
-    )
-    scores = F.array(
-        F.coalesce(F.col("s1"), F.lit(0)),
-        F.coalesce(F.col("s2"), F.lit(0)),
-        F.coalesce(F.col("s3"), F.lit(0)),
-    )
-    review_flag = (
-        F.coalesce(F.col("r1"), F.lit(False))
-        | F.coalesce(F.col("r2"), F.lit(False))
-        | F.coalesce(F.col("r3"), F.lit(False))
-        | F.coalesce(F.col("transitive_link_flag"), F.lit(False))
-    )
-    ambiguity_flag = (
-        F.coalesce(F.col("a1"), F.lit(False))
-        | F.coalesce(F.col("a2"), F.lit(False))
-        | F.coalesce(F.col("a3"), F.lit(False))
-    )
-    source_count = (
-        F.when(F.col("rapid7_entity_id").isNotNull(), F.lit(1)).otherwise(F.lit(0))
-        + F.when(F.col("fortisiem_entity_id").isNotNull(), F.lit(1)).otherwise(F.lit(0))
-        + F.when(F.col("sentinalone_entity_id").isNotNull(), F.lit(1)).otherwise(F.lit(0))
-    )
-    max_score = F.array_max(scores)
-
-    return (
-        df.withColumn("source_count", source_count)
-        .withColumn("match_keys_used", _merge_arrays(F.col("k1"), F.col("k2"), F.col("k3")))
-        .withColumn("matched_mac_values", _merge_arrays(F.col("mm1"), F.col("mm2"), F.col("mm3")))
-        .withColumn("match_method", F.when(F.size(methods) == 0, F.lit("singleton")).otherwise(F.concat_ws("+", F.array_sort(F.array_distinct(methods)))))
-        .withColumn("match_score", F.when(F.size(methods) == 0, F.lit(0)).otherwise(max_score))
-        .withColumn("match_review_flag", F.when(F.size(methods) == 0, F.lit(False)).otherwise(review_flag))
-        .withColumn("ambiguity_flag", ambiguity_flag)
-        .withColumn("match_confidence", _confidence_from_score(F.col("match_score"), F.col("match_review_flag"), F.col("source_count")))
-        .drop("m1", "m2", "m3", "s1", "s2", "s3", "r1", "r2", "r3", "k1", "k2", "k3", "mm1", "mm2", "mm3", "a1", "a2", "a3")
-    )
-
-
-def build_entity_groups(
-    r7_df: DataFrame,
-    fsm_df: DataFrame,
-    s1_df: DataFrame,
-    r7_fsm_pairs: DataFrame,
-    r7_s1_pairs: DataFrame,
-    fsm_s1_pairs: DataFrame,
-) -> DataFrame:
-    r7_fsm_best = _materialize(_select_best_auto_pairs(r7_fsm_pairs, "rapid7_entity_id", "fortisiem_entity_id", "r7_fsm_"))
-    r7_s1_best = _materialize(_select_best_auto_pairs(r7_s1_pairs, "rapid7_entity_id", "sentinalone_entity_id", "r7_s1_"))
-    fsm_s1_best = _materialize(_select_best_auto_pairs(fsm_s1_pairs, "fortisiem_entity_id", "sentinalone_entity_id", "fsm_s1_"))
-
-    r7_ids = _materialize(r7_df.select(F.col("entity_id").alias("rapid7_entity_id")).distinct())
-
-    base = (
-        r7_ids.alias("r")
-        .join(r7_fsm_best.alias("rf"), on="rapid7_entity_id", how="left")
-        .join(r7_s1_best.alias("rs"), on="rapid7_entity_id", how="left")
-        .withColumn("fortisiem_entity_id", F.col("fortisiem_entity_id"))
-        .withColumn("sentinalone_entity_id", F.col("sentinalone_entity_id"))
-        .withColumn("_r7_fsm_entity", F.col("fortisiem_entity_id"))
-        .withColumn("_r7_s1_entity", F.col("sentinalone_entity_id"))
-    )
-    base = _materialize(base)
-
-    # Indirect transitive link attempt via FSM<->S1 pairs:
-    # if r7->s1 exists and r7->fsm missing, fill fsm via fsm<->s1 mapping (and vice versa).
-    by_s1 = fsm_s1_best.select(
-        F.col("sentinalone_entity_id").alias("s1_id_lookup"),
-        F.col("fortisiem_entity_id").alias("fsm_from_s1"),
-        F.col("fsm_s1_match_method").alias("fsm_s1_method_from_s1"),
-        F.col("fsm_s1_match_score").alias("fsm_s1_score_from_s1"),
-        F.col("fsm_s1_match_review_flag").alias("fsm_s1_review_from_s1"),
-        F.col("fsm_s1_match_keys_used").alias("fsm_s1_keys_from_s1"),
-        F.col("fsm_s1_matched_mac_values").alias("fsm_s1_macs_from_s1"),
-        F.col("fsm_s1_ambiguity_flag").alias("fsm_s1_ambiguity_from_s1"),
-    )
-    by_fsm = fsm_s1_best.select(
-        F.col("fortisiem_entity_id").alias("fsm_id_lookup"),
-        F.col("sentinalone_entity_id").alias("s1_from_fsm"),
-        F.col("fsm_s1_match_method").alias("fsm_s1_method_from_fsm"),
-        F.col("fsm_s1_match_score").alias("fsm_s1_score_from_fsm"),
-        F.col("fsm_s1_match_review_flag").alias("fsm_s1_review_from_fsm"),
-        F.col("fsm_s1_match_keys_used").alias("fsm_s1_keys_from_fsm"),
-        F.col("fsm_s1_matched_mac_values").alias("fsm_s1_macs_from_fsm"),
-        F.col("fsm_s1_ambiguity_flag").alias("fsm_s1_ambiguity_from_fsm"),
-    )
-
-    base = base.join(by_s1, base.sentinalone_entity_id == by_s1.s1_id_lookup, "left")
-    base = (
-        base.withColumn(
-            "fortisiem_entity_id",
-            F.coalesce(F.col("fortisiem_entity_id"), F.col("fsm_from_s1")),
+def _component_edge_summary(accepted_edges: DataFrame, labels: DataFrame) -> DataFrame:
+    edge_membership = (
+        accepted_edges.withColumn(
+            "left_node_id",
+            F.concat_ws("|", F.col("left_source_system"), F.col("left_entity_id")),
         )
         .withColumn(
-            "transitive_link_flag_1",
-            F.col("_r7_fsm_entity").isNull() & F.col("fsm_from_s1").isNotNull(),
+            "right_node_id",
+            F.concat_ws("|", F.col("right_source_system"), F.col("right_entity_id")),
         )
-        .drop("s1_id_lookup", "fsm_from_s1")
+        .join(
+            labels.select(
+                F.col("node_id").alias("left_node_id"),
+                F.col("component_label"),
+            ),
+            on="left_node_id",
+            how="inner",
+        )
+    )
+    return _materialize(
+        edge_membership.groupBy("component_label").agg(
+            F.count("*").cast("int").alias("edge_count"),
+            F.min("rule_rank").cast("int").alias("min_match_rule_rank"),
+            F.transform(
+                F.array_sort(
+                    F.array_distinct(
+                        F.collect_list(F.struct(F.col("rule_rank"), F.col("rule_name")))
+                    )
+                ),
+                lambda x: x["rule_name"],
+            ).alias("match_rule_summary"),
+        )
     )
 
-    base = base.join(by_fsm, base.fortisiem_entity_id == by_fsm.fsm_id_lookup, "left")
-    base = (
-        base.withColumn(
-            "sentinalone_entity_id",
-            F.coalesce(F.col("sentinalone_entity_id"), F.col("s1_from_fsm")),
+
+def build_entity_groups(accepted_edges: DataFrame) -> tuple[DataFrame, DataFrame]:
+    if accepted_edges.count() == 0:
+        empty_groups = accepted_edges.sparkSession.createDataFrame(
+            [],
+            "component_id string, rapid7_entity_id string, fortisiem_entity_id string, sentinalone_entity_id string, "
+            "rapid7_entity_ids array<string>, fortisiem_entity_ids array<string>, sentinalone_entity_ids array<string>, "
+            "seen_in_rapid7 boolean, seen_in_fortisiem boolean, seen_in_sentinalone boolean, source_count int, "
+            "edge_count int, matched_sources array<string>, match_rule_summary array<string>, min_match_rule_rank int",
+        )
+        return empty_groups, _empty_component_review(accepted_edges)
+
+    # Connected components are built strictly from accepted edges, never from review-only candidates.
+    nodes = _build_nodes(accepted_edges)
+    edges = _build_edges(accepted_edges)
+    labels = _compute_component_labels(nodes, edges)
+    members = _component_members(nodes, labels)
+    edge_summary = _component_edge_summary(accepted_edges, labels)
+
+    groups = (
+        members.join(edge_summary, on="component_label", how="left")
+        .withColumn("component_id", F.sha2(F.concat_ws("|", F.col("member_node_ids")), 256))
+        .withColumn("seen_in_rapid7", F.size(F.col("rapid7_entity_ids")) > F.lit(0))
+        .withColumn("seen_in_fortisiem", F.size(F.col("fortisiem_entity_ids")) > F.lit(0))
+        .withColumn("seen_in_sentinalone", F.size(F.col("sentinalone_entity_ids")) > F.lit(0))
+        .withColumn(
+            "source_count",
+            F.when(F.col("seen_in_rapid7"), F.lit(1)).otherwise(F.lit(0))
+            + F.when(F.col("seen_in_fortisiem"), F.lit(1)).otherwise(F.lit(0))
+            + F.when(F.col("seen_in_sentinalone"), F.lit(1)).otherwise(F.lit(0)),
         )
         .withColumn(
-            "transitive_link_flag_2",
-            F.col("_r7_s1_entity").isNull() & F.col("s1_from_fsm").isNotNull(),
+            "matched_sources",
+            F.filter(
+                F.array(
+                    F.when(F.col("seen_in_rapid7"), F.lit(SOURCE_R7)),
+                    F.when(F.col("seen_in_fortisiem"), F.lit(SOURCE_FSM)),
+                    F.when(F.col("seen_in_sentinalone"), F.lit(SOURCE_S1)),
+                ),
+                lambda x: x.isNotNull(),
+            ),
         )
-        .drop("fsm_id_lookup", "s1_from_fsm")
-    )
-
-    base = (
-        base.withColumn("transitive_link_flag", F.col("transitive_link_flag_1") | F.col("transitive_link_flag_2"))
-        .drop("transitive_link_flag_1", "transitive_link_flag_2", "_r7_fsm_entity", "_r7_s1_entity")
-        .withColumn("m1", F.col("r7_fsm_match_method"))
-        .withColumn("m2", F.col("r7_s1_match_method"))
         .withColumn(
-            "m3",
-            F.coalesce(F.col("fsm_s1_method_from_s1"), F.col("fsm_s1_method_from_fsm")),
-        )
-        .withColumn("s1", F.col("r7_fsm_match_score"))
-        .withColumn("s2", F.col("r7_s1_match_score"))
-        .withColumn("s3", F.coalesce(F.col("fsm_s1_score_from_s1"), F.col("fsm_s1_score_from_fsm")))
-        .withColumn("r1", F.col("r7_fsm_match_review_flag"))
-        .withColumn("r2", F.col("r7_s1_match_review_flag"))
-        .withColumn("r3", F.coalesce(F.col("fsm_s1_review_from_s1"), F.col("fsm_s1_review_from_fsm")))
-        .withColumn("k1", F.col("r7_fsm_match_keys_used"))
-        .withColumn("k2", F.col("r7_s1_match_keys_used"))
-        .withColumn("k3", F.coalesce(F.col("fsm_s1_keys_from_s1"), F.col("fsm_s1_keys_from_fsm")))
-        .withColumn("mm1", F.col("r7_fsm_matched_mac_values"))
-        .withColumn("mm2", F.col("r7_s1_matched_mac_values"))
-        .withColumn("mm3", F.coalesce(F.col("fsm_s1_macs_from_s1"), F.col("fsm_s1_macs_from_fsm")))
-        .withColumn("a1", F.col("r7_fsm_ambiguity_flag"))
-        .withColumn("a2", F.col("r7_s1_ambiguity_flag"))
-        .withColumn("a3", F.coalesce(F.col("fsm_s1_ambiguity_from_s1"), F.col("fsm_s1_ambiguity_from_fsm")))
-    )
-    base = _materialize(base)
-
-    r7_groups = _build_match_fields(base).select(
-        "rapid7_entity_id",
-        "fortisiem_entity_id",
-        "sentinalone_entity_id",
-        "match_method",
-        "match_score",
-        "match_confidence",
-        "match_review_flag",
-        "match_keys_used",
-        "matched_mac_values",
-        "ambiguity_flag",
-        "transitive_link_flag",
-    )
-    r7_groups = _materialize(r7_groups)
-
-    used_fsm_from_r7 = _materialize(
-        r7_groups.filter(F.col("fortisiem_entity_id").isNotNull()).select("fortisiem_entity_id").distinct()
-    )
-    used_s1_from_r7 = _materialize(
-        r7_groups.filter(F.col("sentinalone_entity_id").isNotNull()).select("sentinalone_entity_id").distinct()
-    )
-
-    fsm_s1_only = (
-        fsm_s1_best.alias("p")
-        .join(used_fsm_from_r7.alias("uf"), F.col("p.fortisiem_entity_id") == F.col("uf.fortisiem_entity_id"), "left_anti")
-        .join(used_s1_from_r7.alias("us"), F.col("p.sentinalone_entity_id") == F.col("us.sentinalone_entity_id"), "left_anti")
-        .select(
-            F.lit(None).cast("string").alias("rapid7_entity_id"),
-            F.col("p.fortisiem_entity_id"),
-            F.col("p.sentinalone_entity_id"),
-            F.col("p.fsm_s1_match_method").alias("match_method"),
-            F.col("p.fsm_s1_match_score").alias("match_score"),
-            F.col("p.fsm_s1_match_confidence").alias("match_confidence"),
-            F.col("p.fsm_s1_match_review_flag").alias("match_review_flag"),
-            F.col("p.fsm_s1_match_keys_used").alias("match_keys_used"),
-            F.col("p.fsm_s1_matched_mac_values").alias("matched_mac_values"),
-            F.col("p.fsm_s1_ambiguity_flag").alias("ambiguity_flag"),
-            F.lit(False).alias("transitive_link_flag"),
+            "duplicate_source_in_component",
+            (F.size(F.col("rapid7_entity_ids")) > F.lit(1))
+            | (F.size(F.col("fortisiem_entity_ids")) > F.lit(1))
+            | (F.size(F.col("sentinalone_entity_ids")) > F.lit(1)),
         )
     )
-    fsm_s1_only = _materialize(fsm_s1_only)
+    groups = _materialize(groups)
 
-    combined = _materialize(r7_groups.unionByName(fsm_s1_only, allowMissingColumns=True))
-
-    used_r7 = _materialize(combined.filter(F.col("rapid7_entity_id").isNotNull()).select("rapid7_entity_id").distinct())
-    used_fsm = _materialize(combined.filter(F.col("fortisiem_entity_id").isNotNull()).select("fortisiem_entity_id").distinct())
-    used_s1 = _materialize(combined.filter(F.col("sentinalone_entity_id").isNotNull()).select("sentinalone_entity_id").distinct())
-
-    fsm_single = (
-        fsm_df.select(F.col("entity_id").alias("fortisiem_entity_id")).distinct()
-        .join(used_fsm, on="fortisiem_entity_id", how="left_anti")
-        .select(
-            F.lit(None).cast("string").alias("rapid7_entity_id"),
-            F.col("fortisiem_entity_id"),
-            F.lit(None).cast("string").alias("sentinalone_entity_id"),
-            F.lit("singleton").alias("match_method"),
-            F.lit(0).cast("int").alias("match_score"),
-            F.lit("singleton").alias("match_confidence"),
-            F.lit(False).alias("match_review_flag"),
-            _empty_str_array().alias("match_keys_used"),
-            _empty_str_array().alias("matched_mac_values"),
-            F.lit(False).alias("ambiguity_flag"),
-            F.lit(False).alias("transitive_link_flag"),
+    accepted_groups = _materialize(
+        groups.filter(
+            (F.col("source_count") >= F.lit(2))
+            & (~F.col("duplicate_source_in_component"))
+        ).select(
+            "component_id",
+            F.element_at(F.col("rapid7_entity_ids"), 1).alias("rapid7_entity_id"),
+            F.element_at(F.col("fortisiem_entity_ids"), 1).alias("fortisiem_entity_id"),
+            F.element_at(F.col("sentinalone_entity_ids"), 1).alias("sentinalone_entity_id"),
+            "rapid7_entity_ids",
+            "fortisiem_entity_ids",
+            "sentinalone_entity_ids",
+            "seen_in_rapid7",
+            "seen_in_fortisiem",
+            "seen_in_sentinalone",
+            "source_count",
+            "edge_count",
+            "matched_sources",
+            "match_rule_summary",
+            "min_match_rule_rank",
         )
     )
 
-    s1_single = (
-        s1_df.select(F.col("entity_id").alias("sentinalone_entity_id")).distinct()
-        .join(used_s1, on="sentinalone_entity_id", how="left_anti")
-        .select(
-            F.lit(None).cast("string").alias("rapid7_entity_id"),
-            F.lit(None).cast("string").alias("fortisiem_entity_id"),
-            F.col("sentinalone_entity_id"),
-            F.lit("singleton").alias("match_method"),
-            F.lit(0).cast("int").alias("match_score"),
-            F.lit("singleton").alias("match_confidence"),
-            F.lit(False).alias("match_review_flag"),
-            _empty_str_array().alias("match_keys_used"),
-            _empty_str_array().alias("matched_mac_values"),
-            F.lit(False).alias("ambiguity_flag"),
-            F.lit(False).alias("transitive_link_flag"),
+    component_review = _materialize(
+        groups.filter(F.col("duplicate_source_in_component")).select(
+            F.lit("component").alias("record_scope"),
+            F.lit(None).cast("string").alias("source_pair"),
+            F.lit(None).cast("string").alias("rule_name"),
+            F.col("min_match_rule_rank").cast("int").alias("rule_rank"),
+            F.lit("component_review").alias("rule_status"),
+            F.lit("duplicate_source_in_component").alias("rule_status_note"),
+            F.lit("review").alias("match_status"),
+            F.lit("duplicate_source_in_component").alias("review_reason"),
+            F.lit(None).cast("string").alias("match_key"),
+            F.array().cast("array<string>").alias("key_columns_used"),
+            F.lit("Accepted edges formed a component with more than one row from the same source.").alias("match_rule_description"),
+            F.lit(None).cast("string").alias("left_source_system"),
+            F.lit(None).cast("string").alias("right_source_system"),
+            F.lit(None).cast("string").alias("left_entity_id"),
+            F.lit(None).cast("string").alias("right_entity_id"),
+            F.lit(None).cast("string").alias("left_source_record_id"),
+            F.lit(None).cast("string").alias("right_source_record_id"),
+            F.lit(None).cast("string").alias("left_source_natural_id"),
+            F.lit(None).cast("string").alias("right_source_natural_id"),
+            F.element_at(F.col("rapid7_entity_ids"), 1).alias("rapid7_entity_id"),
+            F.element_at(F.col("fortisiem_entity_ids"), 1).alias("fortisiem_entity_id"),
+            F.element_at(F.col("sentinalone_entity_ids"), 1).alias("sentinalone_entity_id"),
+            F.lit(None).cast("bigint").alias("left_duplicate_count"),
+            F.lit(None).cast("bigint").alias("right_duplicate_count"),
+            F.lit(None).cast("boolean").alias("left_semantic_ambiguity"),
+            F.lit(None).cast("boolean").alias("right_semantic_ambiguity"),
+            F.lit(None).cast("boolean").alias("left_preferred_by_site"),
+            F.lit(None).cast("boolean").alias("right_preferred_by_site"),
+            F.lit(None).cast("bigint").alias("left_pair_count"),
+            F.lit(None).cast("bigint").alias("right_pair_count"),
+            F.col("rapid7_entity_ids").alias("left_candidate_entity_ids"),
+            F.col("fortisiem_entity_ids").alias("right_candidate_entity_ids"),
+            F.lit(None).cast("timestamp").alias("left_freshness_ts"),
+            F.lit(None).cast("timestamp").alias("right_freshness_ts"),
+            F.lit(False).alias("auto_accepted"),
+            "component_id",
+            F.col("source_count").cast("int").alias("source_count"),
+            F.col("edge_count").cast("int").alias("edge_count"),
+            "matched_sources",
+            "match_rule_summary",
+            F.col("min_match_rule_rank").cast("int").alias("min_match_rule_rank"),
+            "rapid7_entity_ids",
+            "fortisiem_entity_ids",
+            "sentinalone_entity_ids",
         )
     )
 
-    # R7 singletons are already present in r7_groups; this anti-join keeps only uncovered rows if needed.
-    r7_single_missing = (
-        r7_df.select(F.col("entity_id").alias("rapid7_entity_id")).distinct()
-        .join(used_r7, on="rapid7_entity_id", how="left_anti")
-        .select(
-            F.col("rapid7_entity_id"),
-            F.lit(None).cast("string").alias("fortisiem_entity_id"),
-            F.lit(None).cast("string").alias("sentinalone_entity_id"),
-            F.lit("singleton").alias("match_method"),
-            F.lit(0).cast("int").alias("match_score"),
-            F.lit("singleton").alias("match_confidence"),
-            F.lit(False).alias("match_review_flag"),
-            _empty_str_array().alias("match_keys_used"),
-            _empty_str_array().alias("matched_mac_values"),
-            F.lit(False).alias("ambiguity_flag"),
-            F.lit(False).alias("transitive_link_flag"),
-        )
-    )
-
-    result = reduce(
-        lambda l, r: l.unionByName(r, allowMissingColumns=True),
-        [combined, fsm_single, s1_single, r7_single_missing],
-    ).dropDuplicates(["rapid7_entity_id", "fortisiem_entity_id", "sentinalone_entity_id"])
-    return _materialize(result)
+    return accepted_groups, component_review
