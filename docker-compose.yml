@@ -615,7 +615,7 @@ services:
   bronze-current:
     image: tabulario/spark-iceberg
     container_name: bronze-current
-    restart: unless-stopped
+    restart: "no"
     logging: *default-logging
     cpus: "1.0"
     mem_limit: 1.5g

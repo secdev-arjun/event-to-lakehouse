@@ -12,18 +12,14 @@ os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 from gold.config import (
     FORTI_SILVER_CURRENT_TABLE,
     GOLD_ASSETS_CURRENT_TABLE,
-    GOLD_ASSETS_UNMATCHED_TABLE,
-    GOLD_MATCH_CANDIDATES_TABLE,
-    GOLD_MATCH_METRICS_TABLE,
-    GOLD_MATCH_REVIEW_TABLE,
     RAPID7_SILVER_CURRENT_TABLE,
     SENTINEL_SILVER_CURRENT_TABLE,
 )
 from gold.readers import read_table
-from gold.matching import build_unmatched_rows, match_sources
+from gold.matching import match_sources
 from gold.grouping import build_entity_groups
 from gold.survivorship import build_gold_rows
-from gold.writer import write_gold_current, write_gold_table
+from gold.writer import write_gold_current
 
 
 spark = (
@@ -53,14 +49,7 @@ def main():
     forti_df = read_table(spark, FORTI_SILVER_CURRENT_TABLE)
 
     matching_outputs = match_sources(sentinel_df, rapid7_df, forti_df)
-
-    unmatched_rows = build_unmatched_rows(
-        matching_outputs.sentinel_prepared,
-        matching_outputs.rapid7_prepared,
-        matching_outputs.forti_prepared,
-        matching_outputs.accepted_edges,
-    )
-    groups, component_review = build_entity_groups(matching_outputs.accepted_edges)
+    groups, _ = build_entity_groups(matching_outputs.accepted_edges)
 
     gold_df = build_gold_rows(
         matching_outputs.sentinel_prepared,
@@ -70,12 +59,6 @@ def main():
         matching_outputs.accepted_edges,
     )
 
-    review_df = matching_outputs.review_rows.unionByName(component_review, allowMissingColumns=True)
-
-    write_gold_table(matching_outputs.accepted_edges, GOLD_MATCH_CANDIDATES_TABLE)
-    write_gold_table(review_df, GOLD_MATCH_REVIEW_TABLE)
-    write_gold_table(unmatched_rows, GOLD_ASSETS_UNMATCHED_TABLE)
-    write_gold_table(matching_outputs.metrics, GOLD_MATCH_METRICS_TABLE)
     write_gold_current(gold_df, GOLD_ASSETS_CURRENT_TABLE)
 
 

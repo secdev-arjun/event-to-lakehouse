@@ -27,22 +27,6 @@ GOLD_ASSETS_HISTORY_TABLE = os.getenv(
     "GOLD_ASSETS_HISTORY_TABLE",
     "iceberg.gold.assets_history",
 )
-GOLD_MATCH_CANDIDATES_TABLE = os.getenv(
-    "GOLD_MATCH_CANDIDATES_TABLE",
-    "iceberg.gold.match_candidates",
-)
-GOLD_MATCH_REVIEW_TABLE = os.getenv(
-    "GOLD_MATCH_REVIEW_TABLE",
-    "iceberg.gold.match_review",
-)
-GOLD_ASSETS_UNMATCHED_TABLE = os.getenv(
-    "GOLD_ASSETS_UNMATCHED_TABLE",
-    "iceberg.gold.assets_unmatched",
-)
-GOLD_MATCH_METRICS_TABLE = os.getenv(
-    "GOLD_MATCH_METRICS_TABLE",
-    "iceberg.gold.match_metrics",
-)
 
 SOURCE_R7 = "rapid7"
 SOURCE_FSM = "fortisiem"
