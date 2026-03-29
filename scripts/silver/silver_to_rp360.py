@@ -41,24 +41,26 @@ os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 
 RAPID7_SILVER_CURRENT_TABLE = os.getenv(
     "RAPID7_SILVER_CURRENT_TABLE",
-    "iceberg.silver.rapid7__assets__silver__current",
+    "iceberg.silver.rapid7__assets__silver__current__unfiltered",
 )
 FORTI_SILVER_CURRENT_TABLE = os.getenv(
     "FORTI_SILVER_CURRENT_TABLE",
-    "iceberg.silver.fortisiem__device__silver__current",
+    "iceberg.silver.fortisiem__device__silver__current__unfiltered",
 )
 SENTINEL_SILVER_CURRENT_TABLE = os.getenv(
     "SENTINEL_SILVER_CURRENT_TABLE",
-    "iceberg.silver.sentinalone__agents__silver__current",
+    "iceberg.silver.sentinalone__agents__silver__current__unfiltered",
 )
 
 RP360_BASE_URL = os.getenv("RP360_BASE_URL", "http://172.16.232.51:4000/")
 RP360_USERNAME = os.getenv("RP360_USERNAME", "admin")
 RP360_PASSWORD = os.getenv("RP360_PASSWORD", "admin")
 RP360_TIMEOUT_SECONDS = int(os.getenv("RP360_TIMEOUT_SECONDS", "30"))
+RP360_ACCESS_TOKEN = os.getenv("RP360_ACCESS_TOKEN", "").strip()
+RP360_AUTH_SCHEME = os.getenv("RP360_AUTH_SCHEME", "").strip()
 
-RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "silver_filter").strip().lower()
-RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "silver_filter")
+RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "silver_unfiltered").strip().lower()
+RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "silver_unfiltered")
 RP360_SCHEMA_VERBOSE_NAME = os.getenv("RP360_SCHEMA_VERBOSE_NAME", "Silver Asset")
 RP360_SCHEMA_DESCRIPTION = os.getenv(
     "RP360_SCHEMA_DESCRIPTION",
@@ -66,8 +68,8 @@ RP360_SCHEMA_DESCRIPTION = os.getenv(
 )
 RP360_ENSURE_TYPE_SCHEMA = os.getenv("RP360_ENSURE_TYPE_SCHEMA", "true").lower() == "true"
 
-SYNC_STATE_TABLE = os.getenv("RP360_SYNC_STATE_TABLE", "iceberg.silver.rp360_sync_state")
-SYNC_ERROR_TABLE = os.getenv("RP360_SYNC_ERROR_TABLE", "iceberg.silver.rp360_sync_errors")
+SYNC_STATE_TABLE = os.getenv("RP360_SYNC_STATE_TABLE", "iceberg.silver.rp360_sync_state__unfiltered")
+SYNC_ERROR_TABLE = os.getenv("RP360_SYNC_ERROR_TABLE", "iceberg.silver.rp360_sync_errors__unfiltered")
 
 MAX_ROWS_PER_RUN = int(os.getenv("MAX_ROWS_PER_RUN", "0"))  # 0 = no limit
 FAIL_ON_ROW_ERROR = os.getenv("FAIL_ON_ROW_ERROR", "false").lower() == "true"
@@ -216,12 +218,28 @@ def _stable_json(obj: Any) -> str:
 
 
 class RP360Client:
-    def __init__(self, base_url: str, username: str, password: str, timeout_seconds: int = 30):
+    def __init__(
+        self,
+        base_url: str,
+        username: str,
+        password: str,
+        timeout_seconds: int = 30,
+        access_token: Optional[str] = None,
+        auth_scheme: str = "",
+    ):
         self.base_url = base_url.rstrip("/")
         self.username = username
         self.password = password
         self.timeout_seconds = timeout_seconds
-        self.access_token: Optional[str] = None
+        self.access_token: Optional[str] = access_token.strip() if access_token else None
+        if auth_scheme:
+            self.auth_scheme = auth_scheme
+        elif self.access_token and "." not in self.access_token:
+            # Non-JWT token (e.g. DRF token) is typically sent with "Token <value>".
+            self.auth_scheme = "Token"
+        else:
+            self.auth_scheme = "Bearer"
+        self.using_static_token = self.access_token is not None
 
     def _url(self, path_or_url: str) -> str:
         if path_or_url.startswith("http://") or path_or_url.startswith("https://"):
@@ -245,7 +263,7 @@ class RP360Client:
         if payload is not None:
             req.add_header("Content-Type", "application/json")
         if auth and self.access_token:
-            req.add_header("Authorization", f"Bearer {self.access_token}")
+            req.add_header("Authorization", f"{self.auth_scheme} {self.access_token}")
 
         try:
             with urlrequest.urlopen(req, timeout=self.timeout_seconds) as resp:
@@ -260,6 +278,8 @@ class RP360Client:
             raise RuntimeError(f"Network error calling RP360: {exc}") from exc
 
     def authenticate(self) -> None:
+        if self.using_static_token:
+            return
         status, data = self._request(
             "POST",
             "/api/auth/token/",
@@ -274,6 +294,7 @@ class RP360Client:
         if not token:
             raise RuntimeError(f"Auth succeeded but no access token found: {data}")
         self.access_token = str(token)
+        self.auth_scheme = "Bearer"
 
     def list_types(self) -> List[Dict[str, Any]]:
         out: List[Dict[str, Any]] = []
@@ -459,12 +480,27 @@ def _build_silver_payload_hash(df):
     )
 
 
+def _exclude_rapid7_cced_windows(df):
+    """Exclude only Rapid7 rows mapped to org=CCED and site=Windows."""
+    for col_name in ("source_system", "normalised_org_name", "site_name"):
+        if col_name not in df.columns:
+            return df
+
+    src = F.lower(F.trim(F.coalesce(F.col("source_system"), F.lit(""))))
+    org = F.lower(F.trim(F.coalesce(F.col("normalised_org_name"), F.lit(""))))
+    site = F.lower(F.trim(F.coalesce(F.col("site_name"), F.lit(""))))
+
+    exclude_cond = (src == F.lit("rapid7")) & (org == F.lit("cced")) & (site == F.lit("windows"))
+    return df.filter(~exclude_cond)
+
+
 def load_combined_silver_df():
     r7 = _ensure_required_silver_cols(spark.table(RAPID7_SILVER_CURRENT_TABLE))
     fsm = _ensure_required_silver_cols(spark.table(FORTI_SILVER_CURRENT_TABLE))
     s1 = _ensure_required_silver_cols(spark.table(SENTINEL_SILVER_CURRENT_TABLE))
 
     combined = r7.unionByName(fsm, allowMissingColumns=True).unionByName(s1, allowMissingColumns=True)
+    combined = _exclude_rapid7_cced_windows(combined)
     combined = (
         combined.withColumn(
             "silver_ci_id",
@@ -622,8 +658,13 @@ def main() -> None:
         username=RP360_USERNAME,
         password=RP360_PASSWORD,
         timeout_seconds=RP360_TIMEOUT_SECONDS,
+        access_token=RP360_ACCESS_TOKEN or None,
+        auth_scheme=RP360_AUTH_SCHEME,
     )
-    client.authenticate()
+    if RP360_ACCESS_TOKEN:
+        print(f"[INFO] Using static RP360 token auth (scheme={client.auth_scheme})")
+    else:
+        client.authenticate()
     type_id = client.ensure_type(RP360_TYPE_TITLE, rp360_schema, ensure_schema=RP360_ENSURE_TYPE_SCHEMA)
     print(f"[INFO] RP360 type ready: title={RP360_TYPE_TITLE}, id={type_id}")
 
