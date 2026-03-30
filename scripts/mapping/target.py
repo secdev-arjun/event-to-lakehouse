@@ -31,9 +31,9 @@ ORG_NAME_NORMALIZATION_RULES = [
 ]
 
 MANUAL_SITE_ORG_OVERRIDES = [
-    ("abraj energy - linux new", "Abraj Energy", "Linux"),
-    ("abraj energy - network new", "Abraj Energy", "Network"),
-    ("abraj energy - windows new", "Abraj Energy", "Windows"),
+    ("abraj energy - linux new", "Abraj", "Linux"),
+    ("abraj energy - network new", "Abraj", "Network"),
+    ("abraj energy - windows new", "Abraj", "Windows"),
     ("abraj firewall devices monthly", "Abraj Energy", "Firewall"),
     ("abraj linux scan monthly", "Abraj Energy", "Linux"),
     ("abraj switch and network devices monthly scan", "Abraj Energy", "Network"),
@@ -74,11 +74,11 @@ MANUAL_SITE_ORG_OVERRIDES = [
     ("mog", "MOG", "All"),
     ("musandam exchange", "Musandam Exchange", "All"),
     ("oib url scanning", "OIB", "url scanning"),
-    ("phoenix power network", "Phoenix Power", "Network"),
-    ("phoenix power server", "Phoenix Power", "Server"),
-    ("phoenixpower test", "Phoenix Power", "Testing"),
-    ("phoenixpower-blackbox", "Phoenix Power", "Blackbox"),
-    ("phoenixpower", "Phoenix Power", "All"),
+    ("phoenix power network", "PhoenixPower", "Network"),
+    ("phoenix power server", "PhoenixPower", "Server"),
+    ("phoenixpower test", "PhoenixPower", "Testing"),
+    ("phoenixpower-blackbox", "PhoenixPower", "Blackbox"),
+    ("phoenixpower", "PhoenixPower", "All"),
     ("ridge", "Ridge", "All"),
     ("securado", "Securado", "All"),
     ("securado - all active ip discovery", "Securado", "All"),
@@ -455,7 +455,6 @@ PAYLOAD_HASH_EXCLUDE = {
     "raw_json",
 }
 PAYLOAD_HASH_COLUMNS = [f.name for f in TARGET_FIELDS if f.name not in PAYLOAD_HASH_EXCLUDE]
-
 
 
 def add_payload_hash(df):

@@ -37,50 +37,50 @@ spark.conf.set("spark.sql.files.ignoreCorruptFiles", "true")
 # Config
 # ------------------------------------------------------------------------------
 
-RAW_SAMPLE_NAMESPACE = os.getenv("RAW_SAMPLE_NAMESPACE", "iceberg.sample__data__all")
+RAW_SAMPLE_NAMESPACE = os.getenv("RAW_SAMPLE_NAMESPACE", "iceberg.cmdb")
 
 RAPID7_BRONZE_TABLE = os.getenv(
-    "RAPID7_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.prod__rapid7__assets"
+    "RAPID7_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.cmdb__bronze__history__rapid7__assets"
 )
 FORTI_BRONZE_TABLE = os.getenv(
-    "FORTI_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.prod__fortisiem__devices"
+    "FORTI_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.cmdb__bronze__history__fortisiem__devices"
 )
 SENTINEL_BRONZE_TABLE = os.getenv(
-    "SENTINEL_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.prod__sentinelone__agents"
+    "SENTINEL_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.cmdb__bronze__history__sentinelone__agents"
 )
 RAPID7_SITE_BRONZE_TABLE = os.getenv(
-    "RAPID7_SITE_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.prod__rapid7__site"
+    "RAPID7_SITE_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.cmdb__bronze__history__rapid7__sites"
 )
 FORTI_ORG_BRONZE_TABLE = os.getenv(
-    "FORTI_ORG_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.prod__fortisiem__organization"
+    "FORTI_ORG_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.cmdb__bronze__history__fortisiem__organization"
 )
 SENTINEL_SITE_BRONZE_TABLE = os.getenv(
-    "SENTINEL_SITE_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.prod__sentinelone__site"
+    "SENTINEL_SITE_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.cmdb__bronze__history__sentinelone__sites"
 )
 
 RAPID7_CURRENT_TABLE = os.getenv(
     "RAPID7_CURRENT_TABLE",
-    "iceberg.bronze_current.rapid7__assets__current__unfiltered"
+    "iceberg.cmdb.cmdb__bronze__current__rapid7__assets"
 )
 FORTI_CURRENT_TABLE = os.getenv(
     "FORTI_CURRENT_TABLE",
-    "iceberg.bronze_current.fortisiem__device__current__unfiltered"
+    "iceberg.cmdb.cmdb__bronze__current__fortisiem__devices"
 )
 SENTINEL_CURRENT_TABLE = os.getenv(
     "SENTINEL_CURRENT_TABLE",
-    "iceberg.bronze_current.sentinalone__agents__current__unfiltered"
+    "iceberg.cmdb.cmdb__bronze__current__sentinelone__agents"
 )
 RAPID7_SITE_CURRENT_TABLE = os.getenv(
     "RAPID7_SITE_CURRENT_TABLE",
-    "iceberg.bronze_current.rapid7__site__current__unfiltered"
+    "iceberg.cmdb.cmdb__bronze__current__rapid7__sites"
 )
 FORTI_ORG_CURRENT_TABLE = os.getenv(
     "FORTI_ORG_CURRENT_TABLE",
-    "iceberg.bronze_current.fortisiem__organization__current__unfiltered"
+    "iceberg.cmdb.cmdb__bronze__current__fortisiem__organization"
 )
 SENTINEL_SITE_CURRENT_TABLE = os.getenv(
     "SENTINEL_SITE_CURRENT_TABLE",
-    "iceberg.bronze_current.sentinelone__site__current__unfiltered"
+    "iceberg.cmdb.cmdb__bronze__current__sentinelone__sites"
 )
 
 ENTITY_ID_CONFIG_DEFAULTS = {
@@ -99,7 +99,7 @@ SOURCE_COLUMN = "source"
 
 CHECKPOINT_TABLE = os.getenv(
     "BRONZE_CURRENT_CHECKPOINT_TABLE",
-    "iceberg.bronze_current.bronze_current_checkpoint__unfiltered"
+    "iceberg.cmdb.cmdb__bronze__current__checkpoint"
 )
 # POC default: no lookback for speed. For production, set to ~5 minutes.
 CHECKPOINT_LOOKBACK_MINUTES = int(os.getenv("CHECKPOINT_LOOKBACK_MINUTES", "0"))

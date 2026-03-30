@@ -49,47 +49,47 @@ spark.conf.set("spark.sql.files.ignoreCorruptFiles", "true")
 # Input: bronze current tables
 RAPID7_BRONZE_CURRENT_TABLE = os.getenv(
     "RAPID7_BRONZE_CURRENT_TABLE",
-    "iceberg.bronze_current.rapid7__assets__current__unfiltered"
+    "iceberg.cmdb.cmdb__bronze__current__rapid7__assets"
 )
 FORTI_BRONZE_CURRENT_TABLE = os.getenv(
     "FORTI_BRONZE_CURRENT_TABLE",
-    "iceberg.bronze_current.fortisiem__device__current__unfiltered"
+    "iceberg.cmdb.cmdb__bronze__current__fortisiem__devices"
 )
 SENTINEL_BRONZE_CURRENT_TABLE = os.getenv(
     "SENTINEL_BRONZE_CURRENT_TABLE",
-    "iceberg.bronze_current.sentinalone__agents__current__unfiltered"
+    "iceberg.cmdb.cmdb__bronze__current__sentinelone__agents"
 )
 RAPID7_SITE_CURRENT_TABLE = os.getenv(
     "RAPID7_SITE_CURRENT_TABLE",
-    "iceberg.bronze_current.rapid7__site__current__unfiltered"
+    "iceberg.cmdb.cmdb__bronze__current__rapid7__sites"
 )
 
 # Output: silver current + history per source
 RAPID7_SILVER_CURRENT_TABLE = os.getenv(
     "RAPID7_SILVER_CURRENT_TABLE",
-    "iceberg.silver.rapid7__assets__silver__current__unfiltered"
+    "iceberg.cmdb.cmdb__silver__current__rapid7__assets"
 )
 RAPID7_SILVER_HISTORY_TABLE = os.getenv(
     "RAPID7_SILVER_HISTORY_TABLE",
-    "iceberg.silver.rapid7__assets__silver__history__unfiltered"
+    "iceberg.cmdb.cmdb__silver__history__rapid7__assets"
 )
 
 FORTI_SILVER_CURRENT_TABLE = os.getenv(
     "FORTI_SILVER_CURRENT_TABLE",
-    "iceberg.silver.fortisiem__device__silver__current__unfiltered"
+    "iceberg.cmdb.cmdb__silver__current__fortisiem__devices"
 )
 FORTI_SILVER_HISTORY_TABLE = os.getenv(
     "FORTI_SILVER_HISTORY_TABLE",
-    "iceberg.silver.fortisiem__device__silver__history__unfiltered"
+    "iceberg.cmdb.cmdb__silver__history__fortisiem__devices"
 )
 
 SENTINEL_SILVER_CURRENT_TABLE = os.getenv(
     "SENTINEL_SILVER_CURRENT_TABLE",
-    "iceberg.silver.sentinalone__agents__silver__current__unfiltered"
+    "iceberg.cmdb.cmdb__silver__current__sentinelone__agents"
 )
 SENTINEL_SILVER_HISTORY_TABLE = os.getenv(
     "SENTINEL_SILVER_HISTORY_TABLE",
-    "iceberg.silver.sentinalone__agents__silver__history__unfiltered"
+    "iceberg.cmdb.cmdb__silver__history__sentinelone__agents"
 )
 
 CONFORMED_CONTRACT_PATH = os.getenv(
@@ -103,7 +103,7 @@ CONTRACT_CACHE_TTL_SEC = int(os.getenv("CONTRACT_CACHE_TTL_SEC", "300"))
 # Checkpointing (incremental loads)
 SILVER_CHECKPOINT_TABLE = os.getenv(
     "SILVER_CHECKPOINT_TABLE",
-    "iceberg.silver.silver_current_checkpoint__unfiltered"
+    "iceberg.cmdb.cmdb__silver__current__checkpoint"
 )
 SILVER_CHECKPOINT_LOOKBACK_MINUTES = int(os.getenv("SILVER_CHECKPOINT_LOOKBACK_MINUTES", "0"))
 USE_SILVER_INGEST_TS = os.getenv("USE_SILVER_INGEST_TS", "true").lower() == "true"

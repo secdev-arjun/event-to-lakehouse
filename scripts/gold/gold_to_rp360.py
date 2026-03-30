@@ -39,19 +39,24 @@ os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 # Config
 # ------------------------------------------------------------------------------
 
-GOLD_TABLE = os.getenv("GOLD_TABLE", "iceberg.gold.assets_current")
+GOLD_TABLE = os.getenv("GOLD_TABLE", "iceberg.cmdb.cmdb__gold__current")
 
 RP360_BASE_URL = os.getenv("RP360_BASE_URL", "http://172.16.232.51:4000/")
 RP360_USERNAME = os.getenv("RP360_USERNAME", "admin")
 RP360_PASSWORD = os.getenv("RP360_PASSWORD", "admin")
 RP360_TIMEOUT_SECONDS = int(os.getenv("RP360_TIMEOUT_SECONDS", "30"))
+RP360_ACCESS_TOKEN = os.getenv(
+    "RP360_ACCESS_TOKEN",
+    "9717941ef76851715d574fd632053384f774a15d",
+).strip()
+RP360_AUTH_SCHEME = os.getenv("RP360_AUTH_SCHEME", "Token").strip()
 
-RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "gold_asset_v2").strip().lower()
-RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "gold_asset_v2")
+RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "cmdb__gold").strip().lower()
+RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "cmdb__gold")
 RP360_SCHEMA_VERBOSE_NAME = os.getenv("RP360_SCHEMA_VERBOSE_NAME", "Gold Asset")
 RP360_SCHEMA_DESCRIPTION = os.getenv(
     "RP360_SCHEMA_DESCRIPTION",
-    "Canonical gold asset generated from iceberg.gold.assets_current.",
+    "Canonical gold asset generated from iceberg.cmdb.cmdb__gold__current.",
 )
 RP360_ENSURE_TYPE_SCHEMA = os.getenv("RP360_ENSURE_TYPE_SCHEMA", "true").lower() == "true"
 
@@ -208,12 +213,28 @@ def _stable_json(obj: Any) -> str:
 
 
 class RP360Client:
-    def __init__(self, base_url: str, username: str, password: str, timeout_seconds: int = 30):
+    def __init__(
+        self,
+        base_url: str,
+        username: str,
+        password: str,
+        timeout_seconds: int = 30,
+        access_token: Optional[str] = None,
+        auth_scheme: str = "",
+    ):
         self.base_url = base_url.rstrip("/")
         self.username = username
         self.password = password
         self.timeout_seconds = timeout_seconds
-        self.access_token: Optional[str] = None
+        self.access_token: Optional[str] = access_token.strip() if access_token else None
+        if auth_scheme:
+            self.auth_scheme = auth_scheme
+        elif self.access_token and "." not in self.access_token:
+            # Non-JWT token (e.g. DRF token) is typically sent with "Token <value>".
+            self.auth_scheme = "Token"
+        else:
+            self.auth_scheme = "Bearer"
+        self.using_static_token = self.access_token is not None
 
     def _url(self, path_or_url: str) -> str:
         if path_or_url.startswith("http://") or path_or_url.startswith("https://"):
@@ -237,7 +258,7 @@ class RP360Client:
         if payload is not None:
             req.add_header("Content-Type", "application/json")
         if auth and self.access_token:
-            req.add_header("Authorization", f"Bearer {self.access_token}")
+            req.add_header("Authorization", f"{self.auth_scheme} {self.access_token}")
 
         try:
             with urlrequest.urlopen(req, timeout=self.timeout_seconds) as resp:
@@ -252,6 +273,8 @@ class RP360Client:
             raise RuntimeError(f"Network error calling RP360: {exc}") from exc
 
     def authenticate(self) -> None:
+        if self.using_static_token:
+            return
         status, data = self._request(
             "POST",
             "/api/auth/token/",
@@ -266,6 +289,7 @@ class RP360Client:
         if not token:
             raise RuntimeError(f"Auth succeeded but no access token found: {data}")
         self.access_token = str(token)
+        self.auth_scheme = "Bearer"
 
     def list_types(self) -> List[Dict[str, Any]]:
         out: List[Dict[str, Any]] = []
@@ -586,8 +610,13 @@ def main() -> None:
         username=RP360_USERNAME,
         password=RP360_PASSWORD,
         timeout_seconds=RP360_TIMEOUT_SECONDS,
+        access_token=RP360_ACCESS_TOKEN or None,
+        auth_scheme=RP360_AUTH_SCHEME,
     )
-    client.authenticate()
+    if RP360_ACCESS_TOKEN:
+        print(f"[INFO] Using static RP360 token auth (scheme={client.auth_scheme})")
+    else:
+        client.authenticate()
     type_id = client.ensure_type(RP360_TYPE_TITLE, rp360_schema, ensure_schema=RP360_ENSURE_TYPE_SCHEMA)
     print(f"[INFO] RP360 type ready: title={RP360_TYPE_TITLE}, id={type_id}")
 

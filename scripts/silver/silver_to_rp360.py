@@ -41,26 +41,29 @@ os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 
 RAPID7_SILVER_CURRENT_TABLE = os.getenv(
     "RAPID7_SILVER_CURRENT_TABLE",
-    "iceberg.silver.rapid7__assets__silver__current__unfiltered",
+    "iceberg.cmdb.cmdb__silver__current__rapid7__assets",
 )
 FORTI_SILVER_CURRENT_TABLE = os.getenv(
     "FORTI_SILVER_CURRENT_TABLE",
-    "iceberg.silver.fortisiem__device__silver__current__unfiltered",
+    "iceberg.cmdb.cmdb__silver__current__fortisiem__devices",
 )
 SENTINEL_SILVER_CURRENT_TABLE = os.getenv(
     "SENTINEL_SILVER_CURRENT_TABLE",
-    "iceberg.silver.sentinalone__agents__silver__current__unfiltered",
+    "iceberg.cmdb.cmdb__silver__current__sentinelone__agents",
 )
 
 RP360_BASE_URL = os.getenv("RP360_BASE_URL", "http://172.16.232.51:4000/")
 RP360_USERNAME = os.getenv("RP360_USERNAME", "admin")
 RP360_PASSWORD = os.getenv("RP360_PASSWORD", "admin")
 RP360_TIMEOUT_SECONDS = int(os.getenv("RP360_TIMEOUT_SECONDS", "30"))
-RP360_ACCESS_TOKEN = os.getenv("RP360_ACCESS_TOKEN", "").strip()
-RP360_AUTH_SCHEME = os.getenv("RP360_AUTH_SCHEME", "").strip()
+RP360_ACCESS_TOKEN = os.getenv(
+    "RP360_ACCESS_TOKEN",
+    "9717941ef76851715d574fd632053384f774a15d",
+).strip()
+RP360_AUTH_SCHEME = os.getenv("RP360_AUTH_SCHEME", "Token").strip()
 
-RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "silver_unfiltered").strip().lower()
-RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "silver_unfiltered")
+RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "cmdb__silver").strip().lower()
+RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "cmdb__silver")
 RP360_SCHEMA_VERBOSE_NAME = os.getenv("RP360_SCHEMA_VERBOSE_NAME", "Silver Asset")
 RP360_SCHEMA_DESCRIPTION = os.getenv(
     "RP360_SCHEMA_DESCRIPTION",

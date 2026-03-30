@@ -7,25 +7,25 @@ from dataclasses import dataclass
 # Input SILVER current tables
 RAPID7_SILVER_CURRENT_TABLE = os.getenv(
     "RAPID7_SILVER_CURRENT_TABLE",
-    "iceberg.silver.rapid7__assets__silver__current",
+    "iceberg.cmdb.cmdb__silver__current__rapid7__assets",
 )
 FORTI_SILVER_CURRENT_TABLE = os.getenv(
     "FORTI_SILVER_CURRENT_TABLE",
-    "iceberg.silver.fortisiem__device__silver__current",
+    "iceberg.cmdb.cmdb__silver__current__fortisiem__devices",
 )
 SENTINEL_SILVER_CURRENT_TABLE = os.getenv(
     "SENTINEL_SILVER_CURRENT_TABLE",
-    "iceberg.silver.sentinalone__agents__silver__current",
+    "iceberg.cmdb.cmdb__silver__current__sentinelone__agents",
 )
 
 # Output GOLD tables
 GOLD_ASSETS_CURRENT_TABLE = os.getenv(
     "GOLD_ASSETS_CURRENT_TABLE",
-    "iceberg.gold.assets_current",
+    "iceberg.cmdb.cmdb__gold__current",
 )
 GOLD_ASSETS_HISTORY_TABLE = os.getenv(
     "GOLD_ASSETS_HISTORY_TABLE",
-    "iceberg.gold.assets_history",
+    "iceberg.cmdb.cmdb__gold__history",
 )
 
 SOURCE_R7 = "rapid7"
@@ -117,8 +117,8 @@ MATCH_RULES = (
         key_parts=("org_key", "ip_key"),
         key_columns_used=("normalised_org_name", "primary_ip"),
         applicable_pairs=PAIRWISE_SOURCE_PAIRS,
-        auto_accept=False,
-        description="Exact canonical org plus IP kept as review-only until coverage and collision rates are validated.",
+        auto_accept=True,
+        description="Exact canonical org plus IP fallback rule auto-accepted when one-to-one and non-ambiguous.",
     ),
     MatchRuleDefinition(
         rule_name="org_hostname_exact",
@@ -126,8 +126,8 @@ MATCH_RULES = (
         key_parts=("org_key", "hostname_key"),
         key_columns_used=("normalised_org_name", "primary_hostname"),
         applicable_pairs=PAIRWISE_SOURCE_PAIRS,
-        auto_accept=False,
-        description="Exact canonical org plus hostname kept as review-only until ambiguity is better understood.",
+        auto_accept=True,
+        description="Exact canonical org plus hostname fallback rule auto-accepted when one-to-one and non-ambiguous.",
     ),
 )
 
