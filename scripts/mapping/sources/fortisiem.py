@@ -145,10 +145,20 @@ def normalize_fortisiem(df):
     )
     os_version = clean_string(F.coalesce(device_version, platform_version))
     os_family_key = F.lower(F.coalesce(os_name, device_model, lit("")))
+    # Use token-aware OS family matching to avoid substring false positives
+    # (e.g. "Sophos XG Firewall" previously matched "os x" -> MacOS).
     os_family = (
-        F.when(os_family_key.rlike(r"windows"), lit("Windows"))
-        .when(os_family_key.rlike(r"linux|ubuntu|debian|centos|red hat|rhel"), lit("Linux"))
-        .when(os_family_key.rlike(r"mac os|macos|os x"), lit("MacOS"))
+        F.when(os_family_key.rlike(r"(^|\\b)windows(\\b|$)"), lit("Windows"))
+        .when(
+            os_family_key.rlike(
+                r"(^|\\b)(linux|ubuntu|debian|centos|red\\s+hat|rhel)(\\b|$)"
+            ),
+            lit("Linux"),
+        )
+        .when(
+            os_family_key.rlike(r"(^|\\b)(mac\\s*os|macos|darwin|os\\s*x)(\\b|$)"),
+            lit("MacOS"),
+        )
         .otherwise(lit(None).cast("string"))
     )
 

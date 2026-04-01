@@ -363,126 +363,6 @@ services:
       - default
       - lakehouse_net
 
-  lakekeeper-db:
-    image: postgres:17
-    container_name: lakekeeper-postgres
-    restart: unless-stopped
-    logging: *default-logging
-    environment:
-      POSTGRES_DB: lakekeeper
-      POSTGRES_USER: lakekeeper
-      POSTGRES_PASSWORD: lakekeeper
-    volumes:
-      - lakekeeper_postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lakekeeper -d lakekeeper"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - default
-      - lakehouse_net
-
-  lakekeeper-migrate:
-    image: quay.io/lakekeeper/catalog:latest-main
-    container_name: lakekeeper-migrate
-    restart: "no"
-    logging: *default-logging
-    depends_on:
-      lakekeeper-db:
-        condition: service_healthy
-    environment:
-      LAKEKEEPER__PG_ENCRYPTION_KEY: This-is-NOT-Secure!
-      LAKEKEEPER__PG_DATABASE_URL_READ: postgresql://lakekeeper:lakekeeper@lakekeeper-db:5432/lakekeeper
-      LAKEKEEPER__PG_DATABASE_URL_WRITE: postgresql://lakekeeper:lakekeeper@lakekeeper-db:5432/lakekeeper
-      RUST_LOG: info
-    command: ["migrate"]
-    networks:
-      - default
-      - lakehouse_net
-
-  lakekeeper:
-    image: quay.io/lakekeeper/catalog:latest-main
-    container_name: lakekeeper
-    restart: unless-stopped
-    logging: *default-logging
-    depends_on:
-      lakekeeper-migrate:
-        condition: service_completed_successfully
-      lakekeeper-db:
-        condition: service_healthy
-      minio:
-        condition: service_started
-      mc:
-        condition: service_started
-    environment:
-      LAKEKEEPER__PG_ENCRYPTION_KEY: This-is-NOT-Secure!
-      LAKEKEEPER__PG_DATABASE_URL_READ: postgresql://lakekeeper:lakekeeper@lakekeeper-db:5432/lakekeeper
-      LAKEKEEPER__PG_DATABASE_URL_WRITE: postgresql://lakekeeper:lakekeeper@lakekeeper-db:5432/lakekeeper
-      RUST_LOG: info
-    command: ["serve"]
-    healthcheck:
-      test: ["CMD", "/home/nonroot/lakekeeper", "healthcheck"]
-      interval: 5s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
-    ports:
-      - "8183:8181"
-    networks:
-      - default
-      - lakehouse_net
-
-  lakekeeper-bootstrap:
-    image: curlimages/curl:8.8.0
-    container_name: lakekeeper-bootstrap
-    restart: "no"
-    logging: *default-logging
-    depends_on:
-      lakekeeper:
-        condition: service_healthy
-    entrypoint:
-      - /bin/sh
-      - -lc
-      - >
-        curl --fail-with-body -sS -X POST
-        http://lakekeeper:8181/management/v1/bootstrap
-        -H 'Content-Type: application/json'
-        --data '{"accept-terms-of-use": true}'
-        -o /dev/null
-    networks:
-      - default
-      - lakehouse_net
-
-  lakekeeper-initial-warehouse:
-    image: curlimages/curl:8.8.0
-    container_name: lakekeeper-initial-warehouse
-    restart: "no"
-    logging: *default-logging
-    depends_on:
-      lakekeeper:
-        condition: service_healthy
-      lakekeeper-bootstrap:
-        condition: service_completed_successfully
-      mc:
-        condition: service_started
-    volumes:
-      - ./docker/lakekeeper/create-default-warehouse.json:/home/curl_user/create-default-warehouse.json:ro
-    entrypoint:
-      - /bin/sh
-      - -lc
-      - >
-        curl --fail-with-body -sS -X POST
-        http://lakekeeper:8181/management/v1/warehouse
-        -H 'Content-Type: application/json'
-        --data @/home/curl_user/create-default-warehouse.json
-        -o /dev/null
-    networks:
-      - default
-      - lakehouse_net
-
   mc:
     image: minio/mc
     container_name: mc
@@ -499,6 +379,148 @@ services:
       /usr/bin/mc mb --ignore-existing minio/warehouse;
       tail -f /dev/null
       "
+
+
+  trino:
+    image: trinodb/trino:477
+    container_name: trino
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      rest:
+        condition: service_started
+      minio:
+        condition: service_started
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./docker/trino/config.properties:/etc/trino/config.properties:ro
+      - ./docker/trino/node.properties:/etc/trino/node.properties:ro
+      - ./docker/trino/jvm.config:/etc/trino/jvm.config:ro
+      - ./docker/trino/catalog/iceberg.properties:/etc/trino/catalog/iceberg.properties:ro
+    networks:
+      - default
+      - lakehouse_net
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.0
+    container_name: opensearch
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      discovery.type: single-node
+      bootstrap.memory_lock: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms1g -Xmx1g
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      DISABLE_SECURITY_PLUGIN: "true"
+      network.host: 0.0.0.0
+      http.port: 9200
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    networks:
+      - default
+      - lakehouse_net
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.19.0
+    container_name: opensearch-dashboards
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      opensearch:
+        condition: service_started
+    environment:
+      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
+      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "true"
+    ports:
+      - "5601:5601"
+    networks:
+      - default
+      - lakehouse_net
+
+  superset-db:
+    image: postgres:16
+    container_name: superset-db
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      POSTGRES_DB: superset
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+    volumes:
+      - superset_db_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U superset -d superset"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+      - lakehouse_net
+
+  superset:
+    image: apache/superset:4.0.2
+    container_name: superset
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      superset-db:
+        condition: service_healthy
+      trino:
+        condition: service_started
+    ports:
+      - "8088:8088"
+    environment:
+      SUPERSET_SECRET_KEY: "superset-secret-key-change-me"
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+      SUPERSET_ENV: production
+      PIP_ADDITIONAL_REQUIREMENTS: "trino sqlalchemy-trino"
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset@superset-db:5432/superset
+      # Default admin bootstrap (change after first login)
+      SUPERSET_ADMIN_USERNAME: admin
+      SUPERSET_ADMIN_PASSWORD: admin
+      SUPERSET_ADMIN_FIRSTNAME: Superset
+      SUPERSET_ADMIN_LASTNAME: Admin
+      SUPERSET_ADMIN_EMAIL: admin@superset.local
+    volumes:
+      - superset_home:/app/superset_home
+      - ./docker/superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+    networks:
+      - default
+      - lakehouse_net
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        set -e
+        pip install --no-cache-dir sqlalchemy-trino trino
+        superset db upgrade
+        superset fab create-admin \
+          --username "$${SUPERSET_ADMIN_USERNAME}" \
+          --firstname "$${SUPERSET_ADMIN_FIRSTNAME}" \
+          --lastname "$${SUPERSET_ADMIN_LASTNAME}" \
+          --email "$${SUPERSET_ADMIN_EMAIL}" \
+          --password "$${SUPERSET_ADMIN_PASSWORD}" || true
+        superset init
+        exec superset run -h 0.0.0.0 -p 8088
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/health', timeout=5).read()\" >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
 
   spark-iceberg:
     image: tabulario/spark-iceberg
@@ -866,7 +888,9 @@ volumes:
   broker_2_data:
   broker_3_data:
   postgres_data:
-  lakekeeper_postgres_data:
+  superset_db_data:
+  superset_home:
+  opensearch_data:
   livy_logs:
   livy_tmp:
 

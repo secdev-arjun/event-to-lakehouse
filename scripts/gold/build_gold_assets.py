@@ -2,6 +2,7 @@ import os
 import sys
 
 from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(SCRIPT_DIR)
@@ -10,7 +11,9 @@ if BASE_DIR not in sys.path:
 os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 
 from gold.config import (
+    GOLD_ALLOW_DUPLICATE_SOURCE_COMPONENTS,
     FORTI_SILVER_CURRENT_TABLE,
+    GOLD_INCLUDE_REVIEW_MATCHES,
     GOLD_ASSETS_CURRENT_TABLE,
     RAPID7_SILVER_CURRENT_TABLE,
     SENTINEL_SILVER_CURRENT_TABLE,
@@ -49,14 +52,32 @@ def main():
     forti_df = read_table(spark, FORTI_SILVER_CURRENT_TABLE)
 
     matching_outputs = match_sources(sentinel_df, rapid7_df, forti_df)
-    groups, _ = build_entity_groups(matching_outputs.accepted_edges)
+
+    edges_for_grouping = matching_outputs.accepted_edges
+    if GOLD_INCLUDE_REVIEW_MATCHES:
+        review_as_test_matches = (
+            matching_outputs.review_rows
+            .withColumn("auto_accepted", F.lit(True))
+            .withColumn("match_status", F.lit("accepted_test"))
+            .withColumn("review_reason", F.lit(None).cast("string"))
+        )
+        edges_for_grouping = edges_for_grouping.unionByName(
+            review_as_test_matches,
+            allowMissingColumns=True,
+        )
+        print("[WARN] GOLD_INCLUDE_REVIEW_MATCHES=true: review/ambiguous candidates are included for testing.")
+
+    groups, _ = build_entity_groups(
+        edges_for_grouping,
+        allow_duplicate_source_components=GOLD_ALLOW_DUPLICATE_SOURCE_COMPONENTS,
+    )
 
     gold_df = build_gold_rows(
         matching_outputs.sentinel_prepared,
         matching_outputs.rapid7_prepared,
         matching_outputs.forti_prepared,
         groups,
-        matching_outputs.accepted_edges,
+        edges_for_grouping,
     )
 
     write_gold_current(gold_df, GOLD_ASSETS_CURRENT_TABLE)

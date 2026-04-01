@@ -193,7 +193,11 @@ def _component_edge_summary(accepted_edges: DataFrame, labels: DataFrame) -> Dat
     )
 
 
-def build_entity_groups(accepted_edges: DataFrame) -> tuple[DataFrame, DataFrame]:
+def build_entity_groups(
+    accepted_edges: DataFrame,
+    *,
+    allow_duplicate_source_components: bool = False,
+) -> tuple[DataFrame, DataFrame]:
     if accepted_edges.count() == 0:
         empty_groups = accepted_edges.sparkSession.createDataFrame(
             [],
@@ -243,11 +247,12 @@ def build_entity_groups(accepted_edges: DataFrame) -> tuple[DataFrame, DataFrame
     )
     groups = _materialize(groups)
 
+    eligibility_filter = F.col("source_count") >= F.lit(2)
+    if not allow_duplicate_source_components:
+        eligibility_filter = eligibility_filter & (~F.col("duplicate_source_in_component"))
+
     accepted_groups = _materialize(
-        groups.filter(
-            (F.col("source_count") >= F.lit(2))
-            & (~F.col("duplicate_source_in_component"))
-        ).select(
+        groups.filter(eligibility_filter).select(
             "component_id",
             F.element_at(F.col("rapid7_entity_ids"), 1).alias("rapid7_entity_id"),
             F.element_at(F.col("fortisiem_entity_ids"), 1).alias("fortisiem_entity_id"),

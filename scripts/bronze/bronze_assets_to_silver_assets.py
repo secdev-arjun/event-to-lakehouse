@@ -100,6 +100,10 @@ CONFORMED_CONTRACT_PATH = os.getenv(
 COALESCE_PARTITIONS = int(os.getenv("COALESCE_PARTITIONS", "4"))
 CONTRACT_CACHE_TTL_SEC = int(os.getenv("CONTRACT_CACHE_TTL_SEC", "300"))
 
+ENTITY_ID_DELIMITER = "__"
+ENTITY_ID_NULL_TOKEN = "<null>"
+ENTITY_ID_ESCAPE_TOKEN = "\\__"
+
 # Checkpointing (incremental loads)
 SILVER_CHECKPOINT_TABLE = os.getenv(
     "SILVER_CHECKPOINT_TABLE",
@@ -566,6 +570,20 @@ def _dedupe_latest(df):
     )
 
 
+def _escape_entity_part(expr):
+    part = F.trim(expr.cast("string"))
+    part = F.when(part.isNull(), F.lit(ENTITY_ID_NULL_TOKEN)).otherwise(part)
+    return F.regexp_replace(part, ENTITY_ID_DELIMITER, ENTITY_ID_ESCAPE_TOKEN)
+
+
+def _compose_source_entity_id(source_col, entity_col):
+    return concat_ws(
+        ENTITY_ID_DELIMITER,
+        _escape_entity_part(source_col),
+        _escape_entity_part(entity_col),
+    )
+
+
 def process_source(source_name, input_table, current_table, history_table, normalize_fn, contract):
     if not spark.catalog.tableExists(input_table):
         print(f"[WARN] Source table not found: {input_table}")
@@ -604,7 +622,10 @@ def process_source(source_name, input_table, current_table, history_table, norma
         )
 
     normalized = normalized.withColumn("source", col("source"))
-    normalized = normalized.withColumn("entity_id", col("entity_id").cast("string"))
+    normalized = normalized.withColumn(
+        "entity_id",
+        _compose_source_entity_id(col("source"), col("entity_id")),
+    )
     normalized = normalized.withColumn(
         "entity_key_str",
         concat_ws("|", col("source"), col("entity_id"))

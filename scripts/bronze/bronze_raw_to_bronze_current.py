@@ -84,9 +84,9 @@ SENTINEL_SITE_CURRENT_TABLE = os.getenv(
 )
 
 ENTITY_ID_CONFIG_DEFAULTS = {
-    "rapid7__assets": {"fields": ["id"]},
-    "sentinalone__agents": {"fields": ["id"]},
-    "fortisiem__device": {"fields": ["naturalId"]},
+    "rapid7__assets": {"fields": ["site_id", "id"]},
+    "sentinalone__agents": {"fields": ["siteId", "id"]},
+    "fortisiem__device": {"fields": ["organization.attr_id", "naturalId"]},
     "rapid7__site": {"fields": ["name"]},
     "fortisiem__organization": {"fields": ["name"]},
     "sentinelone__site": {"fields": ["name"]},

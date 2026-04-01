@@ -51,8 +51,8 @@ RP360_ACCESS_TOKEN = os.getenv(
 ).strip()
 RP360_AUTH_SCHEME = os.getenv("RP360_AUTH_SCHEME", "Token").strip()
 
-RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "cmdb__gold").strip().lower()
-RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "cmdb__gold")
+RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "cmdb_gold").strip().lower()
+RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "cmdb_gold")
 RP360_SCHEMA_VERBOSE_NAME = os.getenv("RP360_SCHEMA_VERBOSE_NAME", "Gold Asset")
 RP360_SCHEMA_DESCRIPTION = os.getenv(
     "RP360_SCHEMA_DESCRIPTION",

@@ -45,6 +45,9 @@ INVALID_MAC_REGEX = r"^(00:00:00:00:00:00|ff:ff:ff:ff:ff:ff)$"
 VIRTUAL_OUI_REGEX = r"^(00:0c:29:|00:50:56:|00:15:5d:)"
 
 MAX_COMPONENT_ITERATIONS = int(os.getenv("GOLD_MAX_COMPONENT_ITERATIONS", "12"))
+GOLD_INCLUDE_REVIEW_MATCHES = os.getenv("GOLD_INCLUDE_REVIEW_MATCHES", "false").lower() == "true"
+# Keep duplicate-source components blocked in gold grouping.
+GOLD_ALLOW_DUPLICATE_SOURCE_COMPONENTS = False
 
 
 @dataclass(frozen=True)

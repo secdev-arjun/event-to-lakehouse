@@ -62,8 +62,8 @@ RP360_ACCESS_TOKEN = os.getenv(
 ).strip()
 RP360_AUTH_SCHEME = os.getenv("RP360_AUTH_SCHEME", "Token").strip()
 
-RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "cmdb__silver").strip().lower()
-RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "cmdb__silver")
+RP360_TYPE_TITLE = os.getenv("RP360_TYPE_TITLE", "cmdb_silver").strip().lower()
+RP360_SCHEMA_TITLE = os.getenv("RP360_SCHEMA_TITLE", "cmdb_silver")
 RP360_SCHEMA_VERBOSE_NAME = os.getenv("RP360_SCHEMA_VERBOSE_NAME", "Silver Asset")
 RP360_SCHEMA_DESCRIPTION = os.getenv(
     "RP360_SCHEMA_DESCRIPTION",
