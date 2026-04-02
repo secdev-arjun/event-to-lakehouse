@@ -7,25 +7,25 @@ from dataclasses import dataclass
 # Input SILVER current tables
 RAPID7_SILVER_CURRENT_TABLE = os.getenv(
     "RAPID7_SILVER_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__silver__current__rapid7__assets",
+    "iceberg.elt.cmdb__silver__current__rapid7__assets",
 )
 FORTI_SILVER_CURRENT_TABLE = os.getenv(
     "FORTI_SILVER_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__silver__current__fortisiem__devices",
+    "iceberg.elt.cmdb__silver__current__fortisiem__devices",
 )
 SENTINEL_SILVER_CURRENT_TABLE = os.getenv(
     "SENTINEL_SILVER_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__silver__current__sentinelone__agents",
+    "iceberg.elt.cmdb__silver__current__sentinelone__agents",
 )
 
 # Output GOLD tables
 GOLD_ASSETS_CURRENT_TABLE = os.getenv(
     "GOLD_ASSETS_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__gold__current",
+    "iceberg.elt.cmdb__gold__current",
 )
 GOLD_ASSETS_HISTORY_TABLE = os.getenv(
     "GOLD_ASSETS_HISTORY_TABLE",
-    "iceberg.cmdb.cmdb__gold__history",
+    "iceberg.elt.cmdb__gold__history",
 )
 
 SOURCE_R7 = "rapid7"

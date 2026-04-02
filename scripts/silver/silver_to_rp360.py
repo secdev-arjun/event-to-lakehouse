@@ -51,14 +51,18 @@ SENTINEL_SILVER_CURRENT_TABLE = os.getenv(
     "SENTINEL_SILVER_CURRENT_TABLE",
     "iceberg.cmdb.cmdb__silver__current__sentinelone__agents",
 )
+FILESHARE_SILVER_CURRENT_TABLE = os.getenv(
+    "FILESHARE_SILVER_CURRENT_TABLE",
+    "iceberg.cmdb.cmdb__silver__current__fileshare__assets",
+)
 
-RP360_BASE_URL = os.getenv("RP360_BASE_URL", "http://172.16.232.51:4000/")
+RP360_BASE_URL = os.getenv("RP360_BASE_URL", "http://172.16.20.198:8000")
 RP360_USERNAME = os.getenv("RP360_USERNAME", "admin")
 RP360_PASSWORD = os.getenv("RP360_PASSWORD", "admin")
 RP360_TIMEOUT_SECONDS = int(os.getenv("RP360_TIMEOUT_SECONDS", "30"))
 RP360_ACCESS_TOKEN = os.getenv(
     "RP360_ACCESS_TOKEN",
-    "9717941ef76851715d574fd632053384f774a15d",
+    "9873d1a376a18e56db77b4362ad716ef94837090",
 ).strip()
 RP360_AUTH_SCHEME = os.getenv("RP360_AUTH_SCHEME", "Token").strip()
 
@@ -73,6 +77,7 @@ RP360_ENSURE_TYPE_SCHEMA = os.getenv("RP360_ENSURE_TYPE_SCHEMA", "true").lower()
 
 SYNC_STATE_TABLE = os.getenv("RP360_SYNC_STATE_TABLE", "iceberg.silver.rp360_sync_state__unfiltered")
 SYNC_ERROR_TABLE = os.getenv("RP360_SYNC_ERROR_TABLE", "iceberg.silver.rp360_sync_errors__unfiltered")
+RP360_USE_CHECKPOINT = os.getenv("RP360_USE_CHECKPOINT", "false").lower() == "true"
 
 MAX_ROWS_PER_RUN = int(os.getenv("MAX_ROWS_PER_RUN", "0"))  # 0 = no limit
 FAIL_ON_ROW_ERROR = os.getenv("FAIL_ON_ROW_ERROR", "false").lower() == "true"
@@ -501,8 +506,13 @@ def load_combined_silver_df():
     r7 = _ensure_required_silver_cols(spark.table(RAPID7_SILVER_CURRENT_TABLE))
     fsm = _ensure_required_silver_cols(spark.table(FORTI_SILVER_CURRENT_TABLE))
     s1 = _ensure_required_silver_cols(spark.table(SENTINEL_SILVER_CURRENT_TABLE))
+    fs = _ensure_required_silver_cols(spark.table(FILESHARE_SILVER_CURRENT_TABLE))
 
-    combined = r7.unionByName(fsm, allowMissingColumns=True).unionByName(s1, allowMissingColumns=True)
+    combined = (
+        r7.unionByName(fsm, allowMissingColumns=True)
+        .unionByName(s1, allowMissingColumns=True)
+        .unionByName(fs, allowMissingColumns=True)
+    )
     combined = _exclude_rapid7_cced_windows(combined)
     combined = (
         combined.withColumn(
@@ -650,8 +660,6 @@ def _assert_required_config() -> None:
 
 def main() -> None:
     _assert_required_config()
-    ensure_table_with_schema(SYNC_STATE_TABLE, STATE_FIELDS)
-    ensure_table_with_schema(SYNC_ERROR_TABLE, ERROR_FIELDS)
 
     silver_df = load_combined_silver_df()
     rp360_schema = build_rp360_schema(silver_df.schema)
@@ -671,7 +679,15 @@ def main() -> None:
     type_id = client.ensure_type(RP360_TYPE_TITLE, rp360_schema, ensure_schema=RP360_ENSURE_TYPE_SCHEMA)
     print(f"[INFO] RP360 type ready: title={RP360_TYPE_TITLE}, id={type_id}")
 
-    delta_df = compute_delta_df(silver_df, SYNC_STATE_TABLE)
+    if RP360_USE_CHECKPOINT:
+        ensure_table_with_schema(SYNC_STATE_TABLE, STATE_FIELDS)
+        ensure_table_with_schema(SYNC_ERROR_TABLE, ERROR_FIELDS)
+        delta_df = compute_delta_df(silver_df, SYNC_STATE_TABLE)
+    else:
+        # Full-send mode: ignore state table and send all current rows every run.
+        delta_df = dedupe_by_silver_ci_id(
+            silver_df.withColumn("_rp360_ci_id", F.lit(None).cast("string"))
+        )
     if MAX_ROWS_PER_RUN > 0:
         delta_df = delta_df.limit(MAX_ROWS_PER_RUN)
 
@@ -789,13 +805,15 @@ def main() -> None:
             if FAIL_ON_ROW_ERROR:
                 raise
 
-    merge_state_updates(success_updates)
-    append_error_rows(error_rows)
+    if RP360_USE_CHECKPOINT:
+        merge_state_updates(success_updates)
+        append_error_rows(error_rows)
 
     print(
         "[INFO] RP360 sync completed "
-        f"(dry_run={DRY_RUN}) total={total}, success={success}, failed={failed}, "
-        f"state_table={SYNC_STATE_TABLE}, error_table={SYNC_ERROR_TABLE}"
+        f"(dry_run={DRY_RUN}, checkpoint={RP360_USE_CHECKPOINT}) total={total}, "
+        f"success={success}, failed={failed}, state_table={SYNC_STATE_TABLE}, "
+        f"error_table={SYNC_ERROR_TABLE}"
     )
 
     if failed > 0 and FAIL_ON_ROW_ERROR:

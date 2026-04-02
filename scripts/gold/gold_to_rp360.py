@@ -41,13 +41,13 @@ os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
 
 GOLD_TABLE = os.getenv("GOLD_TABLE", "iceberg.cmdb.cmdb__gold__current")
 
-RP360_BASE_URL = os.getenv("RP360_BASE_URL", "http://172.16.232.51:4000/")
+RP360_BASE_URL = os.getenv("RP360_BASE_URL", "http://172.16.20.198:8000")
 RP360_USERNAME = os.getenv("RP360_USERNAME", "admin")
 RP360_PASSWORD = os.getenv("RP360_PASSWORD", "admin")
 RP360_TIMEOUT_SECONDS = int(os.getenv("RP360_TIMEOUT_SECONDS", "30"))
 RP360_ACCESS_TOKEN = os.getenv(
     "RP360_ACCESS_TOKEN",
-    "9717941ef76851715d574fd632053384f774a15d",
+    "9873d1a376a18e56db77b4362ad716ef94837090",
 ).strip()
 RP360_AUTH_SCHEME = os.getenv("RP360_AUTH_SCHEME", "Token").strip()
 

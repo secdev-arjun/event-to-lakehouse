@@ -37,7 +37,7 @@ spark.conf.set("spark.sql.files.ignoreCorruptFiles", "true")
 # Config
 # ------------------------------------------------------------------------------
 
-RAW_SAMPLE_NAMESPACE = os.getenv("RAW_SAMPLE_NAMESPACE", "iceberg.cmdb")
+RAW_SAMPLE_NAMESPACE = os.getenv("RAW_SAMPLE_NAMESPACE", "iceberg.elt")
 
 RAPID7_BRONZE_TABLE = os.getenv(
     "RAPID7_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.cmdb__bronze__history__rapid7__assets"
@@ -57,36 +57,47 @@ FORTI_ORG_BRONZE_TABLE = os.getenv(
 SENTINEL_SITE_BRONZE_TABLE = os.getenv(
     "SENTINEL_SITE_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.cmdb__bronze__history__sentinelone__sites"
 )
+FILESHARE_BRONZE_TABLE = os.getenv(
+    "FILESHARE_BRONZE_TABLE", f"{RAW_SAMPLE_NAMESPACE}.cmdb__bronze__history__fileshare__assets"
+)
 
 RAPID7_CURRENT_TABLE = os.getenv(
     "RAPID7_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__bronze__current__rapid7__assets"
+    "iceberg.elt.cmdb__bronze__current__rapid7__assets"
 )
 FORTI_CURRENT_TABLE = os.getenv(
     "FORTI_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__bronze__current__fortisiem__devices"
+    "iceberg.elt.cmdb__bronze__current__fortisiem__devices"
 )
 SENTINEL_CURRENT_TABLE = os.getenv(
     "SENTINEL_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__bronze__current__sentinelone__agents"
+    "iceberg.elt.cmdb__bronze__current__sentinelone__agents"
 )
 RAPID7_SITE_CURRENT_TABLE = os.getenv(
     "RAPID7_SITE_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__bronze__current__rapid7__sites"
+    "iceberg.elt.cmdb__bronze__current__rapid7__sites"
 )
 FORTI_ORG_CURRENT_TABLE = os.getenv(
     "FORTI_ORG_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__bronze__current__fortisiem__organization"
+    "iceberg.elt.cmdb__bronze__current__fortisiem__organization"
 )
 SENTINEL_SITE_CURRENT_TABLE = os.getenv(
     "SENTINEL_SITE_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__bronze__current__sentinelone__sites"
+    "iceberg.elt.cmdb__bronze__current__sentinelone__sites"
+)
+FILESHARE_CURRENT_TABLE = os.getenv(
+    "FILESHARE_CURRENT_TABLE",
+    "iceberg.elt.cmdb__bronze__current__fileshare__assets"
 )
 
 ENTITY_ID_CONFIG_DEFAULTS = {
     "rapid7__assets": {"fields": ["site_id", "id"]},
     "sentinalone__agents": {"fields": ["siteId", "id"]},
     "fortisiem__device": {"fields": ["organization.attr_id", "naturalId"]},
+    "fileshare__assets": {
+        "required_fields": ["sl_no", "location"],
+        "fallback_fields": ["mac_address", "ip_address", "hostname"],
+    },
     "rapid7__site": {"fields": ["name"]},
     "fortisiem__organization": {"fields": ["name"]},
     "sentinelone__site": {"fields": ["name"]},
@@ -99,11 +110,16 @@ SOURCE_COLUMN = "source"
 
 CHECKPOINT_TABLE = os.getenv(
     "BRONZE_CURRENT_CHECKPOINT_TABLE",
-    "iceberg.cmdb.cmdb__bronze__current__checkpoint"
+    "iceberg.elt.cmdb__bronze__current__checkpoint"
 )
 # POC default: no lookback for speed. For production, set to ~5 minutes.
 CHECKPOINT_LOOKBACK_MINUTES = int(os.getenv("CHECKPOINT_LOOKBACK_MINUTES", "0"))
 USE_INGEST_TS = os.getenv("USE_INGEST_TS", "true").lower() == "true"
+ENABLED_SOURCES = {
+    s.strip().lower()
+    for s in os.getenv("ENABLED_SOURCES", "").split(",")
+    if s.strip()
+}
 
 # ------------------------------------------------------------------------------
 # Helpers
@@ -161,32 +177,102 @@ def _validate_field_path(schema: StructType, path: str) -> None:
             )
 
 
-def _get_entity_id_fields(config: dict, source_key: str) -> list:
+def _get_entity_id_definition(config: dict, source_key: str) -> tuple[str, object]:
     if source_key not in config:
         raise ValueError(f"Source '{source_key}' not found in entity_id config")
 
     source_cfg = config.get(source_key) or {}
     fields = source_cfg.get("fields")
-    if not isinstance(fields, list) or not fields:
-        raise ValueError(f"'fields' must be a non-empty list for '{source_key}'")
+    required_fields = source_cfg.get("required_fields")
+    fallback_fields = source_cfg.get("fallback_fields")
 
-    if len(fields) != len(set(fields)):
-        raise ValueError(f"Duplicate field names in fields for '{source_key}'")
+    if fields is not None and (required_fields is not None or fallback_fields is not None):
+        raise ValueError(
+            f"Use either 'fields' or ('required_fields' + 'fallback_fields') for '{source_key}'"
+        )
 
-    return fields
+    if fields is not None:
+        if not isinstance(fields, list) or not fields:
+            raise ValueError(f"'fields' must be a non-empty list for '{source_key}'")
+        if len(fields) != len(set(fields)):
+            raise ValueError(f"Duplicate field names in fields for '{source_key}'")
+        return "composite", fields
+
+    if required_fields is None and fallback_fields is not None:
+        raise ValueError(f"'required_fields' must also be set when using 'fallback_fields' for '{source_key}'")
+    if required_fields is not None and fallback_fields is None:
+        raise ValueError(f"'fallback_fields' must also be set when using 'required_fields' for '{source_key}'")
+
+    if required_fields is not None and fallback_fields is not None:
+        if not isinstance(required_fields, list) or not required_fields:
+            raise ValueError(f"'required_fields' must be a non-empty list for '{source_key}'")
+        if not isinstance(fallback_fields, list) or not fallback_fields:
+            raise ValueError(f"'fallback_fields' must be a non-empty list for '{source_key}'")
+        if len(required_fields) != len(set(required_fields)):
+            raise ValueError(f"Duplicate field names in required_fields for '{source_key}'")
+        if len(fallback_fields) != len(set(fallback_fields)):
+            raise ValueError(f"Duplicate field names in fallback_fields for '{source_key}'")
+        overlap = set(required_fields).intersection(set(fallback_fields))
+        if overlap:
+            raise ValueError(
+                f"Same field(s) present in required_fields and fallback_fields for "
+                f"'{source_key}': {sorted(overlap)}"
+            )
+        return "required_plus_fallback", {
+            "required_fields": required_fields,
+            "fallback_fields": fallback_fields,
+        }
+
+    raise ValueError(
+        f"Invalid entity_id config for '{source_key}'; expected 'fields' or "
+        f"('required_fields' + 'fallback_fields')"
+    )
+
+
+def _clean_entity_value_expr(field_path: str, lowercase: bool = False):
+    col_expr = F.col(field_path).cast("string")
+    col_expr = F.trim(col_expr)
+    col_expr = F.when((col_expr.isNull()) | (col_expr == ""), F.lit(None)).otherwise(col_expr)
+    if lowercase:
+        col_expr = F.lower(col_expr)
+    return col_expr
+
+
+def _escape_entity_component_expr(col_expr):
+    return F.regexp_replace(col_expr, ENTITY_ID_DELIMITER, ENTITY_ID_ESCAPE_TOKEN)
 
 
 def _build_entity_id_expr(fields: list):
     parts = []
     for field_path in fields:
-        col_expr = F.col(field_path)
-        col_expr = col_expr.cast("string")
-        col_expr = F.trim(col_expr)
+        col_expr = _clean_entity_value_expr(field_path)
         col_expr = F.when(col_expr.isNull(), F.lit(ENTITY_ID_NULL_TOKEN)).otherwise(col_expr)
-        # Escape delimiter occurrences to avoid collisions.
-        col_expr = F.regexp_replace(col_expr, ENTITY_ID_DELIMITER, ENTITY_ID_ESCAPE_TOKEN)
+        col_expr = _escape_entity_component_expr(col_expr)
         parts.append(col_expr)
     return F.concat_ws(ENTITY_ID_DELIMITER, *parts)
+
+
+def _build_fallback_entity_id_expr(fields: list):
+    # User-entered IDs can vary by casing/spacing; normalize for stable fallback identity.
+    candidates = [_clean_entity_value_expr(field_path, lowercase=True) for field_path in fields]
+    return F.coalesce(*candidates)
+
+
+def _build_required_plus_fallback_entity_id_expr(required_fields: list, fallback_fields: list):
+    required_exprs = [
+        _clean_entity_value_expr(field_path, lowercase=True) for field_path in required_fields
+    ]
+    fallback_expr = _build_fallback_entity_id_expr(fallback_fields)
+
+    valid_expr = fallback_expr.isNotNull()
+    for req_expr in required_exprs:
+        valid_expr = valid_expr & req_expr.isNotNull()
+
+    parts = [_escape_entity_component_expr(req_expr) for req_expr in required_exprs]
+    parts.append(_escape_entity_component_expr(fallback_expr))
+    entity_id_expr = F.concat_ws(ENTITY_ID_DELIMITER, *parts)
+
+    return entity_id_expr, valid_expr
 
 
 def _apply_source_metadata(df, source_key: str):
@@ -235,6 +321,12 @@ def _get_checkpoint(source_system: str):
         .take(1)
     )
     return rows[0][0] if rows else None
+
+
+def _is_source_enabled(source_system: str, source_key: str) -> bool:
+    if not ENABLED_SOURCES:
+        return True
+    return (source_system or "").lower() in ENABLED_SOURCES or (source_key or "").lower() in ENABLED_SOURCES
 
 
 def _update_checkpoint(source_system: str, max_ingest_ts):
@@ -306,16 +398,19 @@ def _with_ingest_ts(df):
 
 
 def _merge_current_raw(incoming_df, current_table: str):
-    if incoming_df.rdd.isEmpty():
-        return 0
-
     _ensure_table_from_raw(incoming_df, current_table)
 
     # Deduplicate incoming updates by latest ingest timestamp per entity_id
-    incoming_latest = _latest_per_entity(incoming_df, "entity_id")
-    incoming_latest_count = incoming_latest.count()
+    incoming_latest = _latest_per_entity(incoming_df, "entity_id").persist()
+    stats = incoming_latest.agg(
+        F.count(F.lit(1)).alias("row_count"),
+        F.max("_ingest_ts").alias("max_ingest_ts"),
+    ).collect()[0]
+    incoming_latest_count = int(stats["row_count"] or 0)
+    max_ingest_ts = stats["max_ingest_ts"]
     if incoming_latest_count == 0:
-        return 0
+        incoming_latest.unpersist()
+        return 0, None
     incoming_latest.createOrReplaceTempView("incoming_updates")
 
     all_cols = incoming_latest.columns
@@ -333,10 +428,15 @@ def _merge_current_raw(incoming_df, current_table: str):
           INSERT ({insert_cols}) VALUES ({insert_vals})
     """
     spark.sql(merge_sql)
-    return incoming_latest_count
+    incoming_latest.unpersist()
+    return incoming_latest_count, max_ingest_ts
 
 
 def _process_source(source_system, source_key, raw_table, current_table, entity_id_config):
+    if not _is_source_enabled(source_system, source_key):
+        print(f"[INFO] Skipping source '{source_key}' (not in ENABLED_SOURCES)")
+        return
+
     if not spark.catalog.tableExists(raw_table):
         print(f"[WARN] Source table not found: {raw_table}")
         return
@@ -345,16 +445,8 @@ def _process_source(source_system, source_key, raw_table, current_table, entity_
     raw_df = spark.table(raw_table)
     raw_df = _with_ingest_ts(raw_df)
 
-    entity_id_fields = _get_entity_id_fields(entity_id_config, source_key)
-    for field_path in entity_id_fields:
-        _validate_field_path(raw_df.schema, field_path)
-
-    print(f"[INFO] entity_id fields for '{source_key}': {entity_id_fields}")
-
-    raw_df = _apply_source_metadata(raw_df, source_key)
-    raw_df = raw_df.withColumn("entity_id", _build_entity_id_expr(entity_id_fields))
-
-    # Optional incremental filter using checkpoints
+    # Optional incremental filter using checkpoints. Apply this early so downstream
+    # entity-id transforms only run on the candidate slice.
     force_full = _needs_full_rebuild(current_table)
     if USE_INGEST_TS and not force_full:
         last_ts = _get_checkpoint(source_system)
@@ -362,27 +454,56 @@ def _process_source(source_system, source_key, raw_table, current_table, entity_
             start_ts = last_ts - timedelta(minutes=CHECKPOINT_LOOKBACK_MINUTES)
             raw_df = raw_df.filter(F.col("_ingest_ts") > F.lit(start_ts))
 
-    raw_count = raw_df.count()
-    print(f"[INFO] {source_key}: rows after filters = {raw_count}")
-    if raw_count == 0:
+    entity_id_strategy, entity_id_def = _get_entity_id_definition(entity_id_config, source_key)
+
+    raw_df = _apply_source_metadata(raw_df, source_key)
+    if entity_id_strategy == "required_plus_fallback":
+        required_fields = entity_id_def["required_fields"]
+        fallback_fields = entity_id_def["fallback_fields"]
+        for field_path in required_fields + fallback_fields:
+            _validate_field_path(raw_df.schema, field_path)
+
+        print(
+            f"[INFO] entity_id strategy for '{source_key}': "
+            f"required_plus_fallback required={required_fields} fallback={fallback_fields}"
+        )
+        entity_id_expr, valid_expr = _build_required_plus_fallback_entity_id_expr(
+            required_fields, fallback_fields
+        )
+        raw_df = raw_df.withColumn("entity_id", entity_id_expr).filter(valid_expr)
+    elif entity_id_strategy == "fallback":
+        entity_id_fields = entity_id_def
+        for field_path in entity_id_fields:
+            _validate_field_path(raw_df.schema, field_path)
+
+        print(
+            f"[INFO] entity_id strategy for '{source_key}': "
+            f"fallback {entity_id_fields}"
+        )
+        raw_df = raw_df.withColumn(
+            "entity_id",
+            _escape_entity_component_expr(_build_fallback_entity_id_expr(entity_id_fields)),
+        )
+        raw_df = raw_df.filter(F.col("entity_id").isNotNull())
+    else:
+        entity_id_fields = entity_id_def
+        for field_path in entity_id_fields:
+            _validate_field_path(raw_df.schema, field_path)
+
+        print(
+            f"[INFO] entity_id strategy for '{source_key}': "
+            f"composite {entity_id_fields}"
+        )
+        raw_df = raw_df.withColumn("entity_id", _build_entity_id_expr(entity_id_fields))
+
+    incoming_df = raw_df.filter(F.col("_ingest_ts").isNotNull())
+    merged_count, max_ts = _merge_current_raw(incoming_df, current_table)
+    print(f"[INFO] {source_key}: rows merged into {current_table} = {merged_count}")
+    if merged_count == 0:
         print(f"[INFO] No new rows for {source_key}")
         return
 
-    incoming_df = raw_df.filter(F.col("_ingest_ts").isNotNull())
-    incoming_count = incoming_df.count()
-    print(f"[INFO] {source_key}: rows with valid ingest_ts = {incoming_count}")
-    if incoming_count == 0:
-        return
-
-    sample_ids = [r["entity_id"] for r in incoming_df.select("entity_id").limit(3).collect()]
-    if sample_ids:
-        print(f"[INFO] {source_key}: entity_id samples = {sample_ids}")
-
-    merged_count = _merge_current_raw(incoming_df, current_table)
-    print(f"[INFO] {source_key}: rows merged into {current_table} = {merged_count}")
-
     if USE_INGEST_TS:
-        max_ts = incoming_df.agg(F.max("_ingest_ts")).collect()[0][0]
         _update_checkpoint(source_system, max_ts)
 
 
@@ -408,6 +529,13 @@ def main():
         "sentinalone__agents",
         SENTINEL_BRONZE_TABLE,
         SENTINEL_CURRENT_TABLE,
+        entity_id_config,
+    )
+    _process_source(
+        "fileshare",
+        "fileshare__assets",
+        FILESHARE_BRONZE_TABLE,
+        FILESHARE_CURRENT_TABLE,
         entity_id_config,
     )
     _process_source(

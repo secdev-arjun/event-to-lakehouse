@@ -28,7 +28,6 @@
       "missing_permissions",
       "user_actions_needed",
       "location_names",
-      "device_status",
       "discover_method",
       "event_log_status",
       "perf_mon_status",
@@ -470,33 +469,6 @@
       "type": "bigint",
       "nullable": true
     },
-    "device_vendor": {
-      "type": "string",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "trim"
-        }
-      ]
-    },
-    "device_model": {
-      "type": "string",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "trim"
-        }
-      ]
-    },
-    "device_version": {
-      "type": "string",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "trim"
-        }
-      ]
-    },
     "platform_version": {
       "type": "string",
       "nullable": true,
@@ -848,15 +820,6 @@
         },
         {
           "op": "array_sort"
-        }
-      ]
-    },
-    "device_status": {
-      "type": "string",
-      "nullable": true,
-      "rules": [
-        {
-          "op": "trim"
         }
       ]
     },

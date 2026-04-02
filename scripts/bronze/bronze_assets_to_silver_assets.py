@@ -22,6 +22,7 @@ from mapping.target import TARGET_FIELDS, ensure_columns, add_payload_hash
 from mapping.sources.rapid7 import normalize_rapid7
 from mapping.sources.fortisiem import normalize_fortisiem
 from mapping.sources.sentinel import normalize_sentinel
+from mapping.sources.fileshare import normalize_fileshare
 
 # ------------------------------------------------------------------------------
 # Spark session (your docker spark-submit provides Iceberg + s3a configs)
@@ -49,47 +50,59 @@ spark.conf.set("spark.sql.files.ignoreCorruptFiles", "true")
 # Input: bronze current tables
 RAPID7_BRONZE_CURRENT_TABLE = os.getenv(
     "RAPID7_BRONZE_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__bronze__current__rapid7__assets"
+    "iceberg.elt.cmdb__bronze__current__rapid7__assets"
 )
 FORTI_BRONZE_CURRENT_TABLE = os.getenv(
     "FORTI_BRONZE_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__bronze__current__fortisiem__devices"
+    "iceberg.elt.cmdb__bronze__current__fortisiem__devices"
 )
 SENTINEL_BRONZE_CURRENT_TABLE = os.getenv(
     "SENTINEL_BRONZE_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__bronze__current__sentinelone__agents"
+    "iceberg.elt.cmdb__bronze__current__sentinelone__agents"
+)
+FILESHARE_BRONZE_CURRENT_TABLE = os.getenv(
+    "FILESHARE_BRONZE_CURRENT_TABLE",
+    "iceberg.elt.cmdb__bronze__current__fileshare__assets"
 )
 RAPID7_SITE_CURRENT_TABLE = os.getenv(
     "RAPID7_SITE_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__bronze__current__rapid7__sites"
+    "iceberg.elt.cmdb__bronze__current__rapid7__sites"
 )
 
 # Output: silver current + history per source
 RAPID7_SILVER_CURRENT_TABLE = os.getenv(
     "RAPID7_SILVER_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__silver__current__rapid7__assets"
+    "iceberg.elt.cmdb__silver__current__rapid7__assets"
 )
 RAPID7_SILVER_HISTORY_TABLE = os.getenv(
     "RAPID7_SILVER_HISTORY_TABLE",
-    "iceberg.cmdb.cmdb__silver__history__rapid7__assets"
+    "iceberg.elt.cmdb__silver__history__rapid7__assets"
 )
 
 FORTI_SILVER_CURRENT_TABLE = os.getenv(
     "FORTI_SILVER_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__silver__current__fortisiem__devices"
+    "iceberg.elt.cmdb__silver__current__fortisiem__devices"
 )
 FORTI_SILVER_HISTORY_TABLE = os.getenv(
     "FORTI_SILVER_HISTORY_TABLE",
-    "iceberg.cmdb.cmdb__silver__history__fortisiem__devices"
+    "iceberg.elt.cmdb__silver__history__fortisiem__devices"
 )
 
 SENTINEL_SILVER_CURRENT_TABLE = os.getenv(
     "SENTINEL_SILVER_CURRENT_TABLE",
-    "iceberg.cmdb.cmdb__silver__current__sentinelone__agents"
+    "iceberg.elt.cmdb__silver__current__sentinelone__agents"
 )
 SENTINEL_SILVER_HISTORY_TABLE = os.getenv(
     "SENTINEL_SILVER_HISTORY_TABLE",
-    "iceberg.cmdb.cmdb__silver__history__sentinelone__agents"
+    "iceberg.elt.cmdb__silver__history__sentinelone__agents"
+)
+FILESHARE_SILVER_CURRENT_TABLE = os.getenv(
+    "FILESHARE_SILVER_CURRENT_TABLE",
+    "iceberg.elt.cmdb__silver__current__fileshare__assets"
+)
+FILESHARE_SILVER_HISTORY_TABLE = os.getenv(
+    "FILESHARE_SILVER_HISTORY_TABLE",
+    "iceberg.elt.cmdb__silver__history__fileshare__assets"
 )
 
 CONFORMED_CONTRACT_PATH = os.getenv(
@@ -99,6 +112,12 @@ CONFORMED_CONTRACT_PATH = os.getenv(
 
 COALESCE_PARTITIONS = int(os.getenv("COALESCE_PARTITIONS", "4"))
 CONTRACT_CACHE_TTL_SEC = int(os.getenv("CONTRACT_CACHE_TTL_SEC", "300"))
+REMOVED_SILVER_FIELDS = {
+    "device_vendor",
+    "device_model",
+    "device_version",
+    "device_status",
+}
 
 ENTITY_ID_DELIMITER = "__"
 ENTITY_ID_NULL_TOKEN = "<null>"
@@ -107,7 +126,7 @@ ENTITY_ID_ESCAPE_TOKEN = "\\__"
 # Checkpointing (incremental loads)
 SILVER_CHECKPOINT_TABLE = os.getenv(
     "SILVER_CHECKPOINT_TABLE",
-    "iceberg.cmdb.cmdb__silver__current__checkpoint"
+    "iceberg.elt.cmdb__silver__current__checkpoint"
 )
 SILVER_CHECKPOINT_LOOKBACK_MINUTES = int(os.getenv("SILVER_CHECKPOINT_LOOKBACK_MINUTES", "0"))
 USE_SILVER_INGEST_TS = os.getenv("USE_SILVER_INGEST_TS", "true").lower() == "true"
@@ -144,6 +163,11 @@ def ensure_table(df, table_name: str):
         return
 
     existing_fields = {f.name: f.dataType for f in spark.table(table_name).schema.fields}
+    obsolete = [name for name in REMOVED_SILVER_FIELDS if name in existing_fields]
+    for name in obsolete:
+        spark.sql(f"ALTER TABLE {table_name} DROP COLUMN {name}")
+
+    existing_fields = {f.name: f.dataType for f in spark.table(table_name).schema.fields}
     missing = [f for f in TARGET_FIELDS if f.name not in existing_fields]
     if missing:
         cols_sql = ", ".join([f"{f.name} {f.dataType.simpleString()}" for f in missing])
@@ -153,6 +177,11 @@ def ensure_history_table(df, table_name: str):
     if not spark.catalog.tableExists(table_name):
         df.limit(0).writeTo(table_name).create()
         return
+
+    existing_fields = {f.name: f.dataType for f in spark.table(table_name).schema.fields}
+    obsolete = [name for name in REMOVED_SILVER_FIELDS if name in existing_fields]
+    for name in obsolete:
+        spark.sql(f"ALTER TABLE {table_name} DROP COLUMN {name}")
 
     existing_fields = {f.name: f.dataType for f in spark.table(table_name).schema.fields}
     missing = [f for f in HISTORY_FIELDS if f.name not in existing_fields]
@@ -699,6 +728,14 @@ def main():
         SENTINEL_SILVER_CURRENT_TABLE,
         SENTINEL_SILVER_HISTORY_TABLE,
         normalize_sentinel,
+        contract,
+    )
+    process_source(
+        "fileshare",
+        FILESHARE_BRONZE_CURRENT_TABLE,
+        FILESHARE_SILVER_CURRENT_TABLE,
+        FILESHARE_SILVER_HISTORY_TABLE,
+        normalize_fileshare,
         contract,
     )
 

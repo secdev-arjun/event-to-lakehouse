@@ -402,52 +402,6 @@ services:
       - default
       - lakehouse_net
 
-  opensearch:
-    image: opensearchproject/opensearch:2.19.0
-    container_name: opensearch
-    restart: unless-stopped
-    logging: *default-logging
-    environment:
-      discovery.type: single-node
-      bootstrap.memory_lock: "true"
-      OPENSEARCH_JAVA_OPTS: -Xms1g -Xmx1g
-      DISABLE_INSTALL_DEMO_CONFIG: "true"
-      DISABLE_SECURITY_PLUGIN: "true"
-      network.host: 0.0.0.0
-      http.port: 9200
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-    volumes:
-      - opensearch_data:/usr/share/opensearch/data
-    ports:
-      - "9200:9200"
-      - "9600:9600"
-    networks:
-      - default
-      - lakehouse_net
-
-  opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:2.19.0
-    container_name: opensearch-dashboards
-    restart: unless-stopped
-    logging: *default-logging
-    depends_on:
-      opensearch:
-        condition: service_started
-    environment:
-      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
-      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "true"
-    ports:
-      - "5601:5601"
-    networks:
-      - default
-      - lakehouse_net
-
   superset-db:
     image: postgres:16
     container_name: superset-db
@@ -890,7 +844,6 @@ volumes:
   postgres_data:
   superset_db_data:
   superset_home:
-  opensearch_data:
   livy_logs:
   livy_tmp:
 

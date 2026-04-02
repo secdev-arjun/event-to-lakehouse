@@ -34,17 +34,19 @@ MANUAL_SITE_ORG_OVERRIDES = [
     ("abraj energy - linux new", "Abraj", "Linux"),
     ("abraj energy - network new", "Abraj", "Network"),
     ("abraj energy - windows new", "Abraj", "Windows"),
-    ("abraj firewall devices monthly", "Abraj Energy", "Firewall"),
-    ("abraj linux scan monthly", "Abraj Energy", "Linux"),
-    ("abraj switch and network devices monthly scan", "Abraj Energy", "Network"),
-    ("abraj windows devices monthly", "Abraj Energy", "Windows"),
-    ("abraj energy - endpoint", "Abraj Energy", "Endpoint"),
+    ("abraj firewall devices monthly", "Abraj", "Firewall"),
+    ("abraj linux scan monthly", "Abraj", "Linux"),
+    ("abraj switch and network devices monthly scan", "Abraj", "Network"),
+    ("abraj windows devices monthly", "Abraj", "Windows"),
+    ("abraj energy - endpoint", "Abraj", "Endpoint"),
+    ("abraj", "Abraj", "Endpoint"),
     ("cced firewalls quarter", "CCED", "Firewall"),
     ("cced scan assistant", "CCED", "Scan assistant"),
     ("cced sw quarter", "CCED", "SW QUARTER"),
     ("cced windows quarter", "CCED", "Windows"),
     ("ccedorg", "CCED", "All"),
     ("cc energy development oman", "CCED", "All"),
+    ("cced", "CCED", "All"),
     ("d2c-vascan", "D2C", "Vascan"),
     ("discovery", "Discovery", "Discovery"),
     ("hamdan exchange", "Hamdan Exchange", "Hamdan Exchange"),
@@ -87,7 +89,7 @@ MANUAL_SITE_ORG_OVERRIDES = [
     ("securado-windows server", "Securado", "Windows"),
     ("sonar-test", "Sonar-Test", "Sonar-Test"),
     ("surtest", "surtest", "surtest"),
-    ("test", "test", "test"),
+    ("test", "Test", "Test"),
     ("test 4", "test 4", "test 4"),
     ("test aisha", "test aisha", "test aisha"),
     ("test phone\\", "test phone\\", "test phone\\"),
@@ -107,6 +109,7 @@ MANUAL_SITE_ORG_OVERRIDES = [
     ("globalmoneyexchange", "GlobalMoneyExchange", "All"),
     ("gulfoverseasexchange", "GulfOverseasExchange", "All"),
     ("lakhoos", "Lakhoos", "All"),
+    ("lakhoos_exchange", "Lakhoos", "All"),
     ("mipp", "MIPP", "All"),
     ("mpc", "MPC", "All"),
     ("national_university", "National_University", "All"),
@@ -116,19 +119,122 @@ MANUAL_SITE_ORG_OVERRIDES = [
     ("ajit khimji group", "Ajit Khimji Group", "All"),
     ("al siraj holdings", "Al Siraj Holdings", "All"),
     ("asyad corporate", "Asyad", "Corporate"),
+    ("corporate/odp - corporate", "Asyad", "Corporate"),
+    ("corporate/odp - corprate", "Asyad", "Corporate"),
+    ("corporate/odp - cloud", "Asyad", "Corporate"),
+    ("corporate/odp - odp", "Asyad", "Corporate"),
     ("asyad drydock", "Asyad", "Drydock"),
+    ("drydock", "Asyad", "Drydock"),
+    ("drydock - drydock", "Asyad", "Drydock"),
+    ("drydock - odp", "Asyad", "Drydock"),
     ("asyad ports", "Asyad", "Ports"),
+    ("port - port", "Asyad", "Ports"),
+    ("port - odp", "Asyad", "Ports"),
     ("asyad shipping", "Asyad", "Shipping"),
-    ("mwasalat", "Asyad", None),
-    ("oman post & asyad express", "Asyad", None),
-    ("oman post & express", "Asyad", None),
-    ("salalah free zone", "Asyad", None),
+    ("mwasalat", "Asyad", "Mwasalat"),
+    ("mwasalat - mwasalat az", "Asyad", "Mwasalat"),
+    ("mwasalat - mwasalat gh", "Asyad", "Mwasalat"),
+    ("oman post & asyad express", "Asyad", "Oman Post & Express"),
+    ("omanpost", "Asyad", "Oman Post & Express"),
+    ("omanpost - omanpost", "Asyad", "Oman Post & Express"),
+    ("omanship - corporate", "Asyad", "Oman Post & Express"),
+    ("omanship - omanship", "Asyad", "Oman Post & Express"),
+    ("salalah free zone", "Asyad", "Salalah Free Zone"),
+    ("salalah freezone", "Asyad", "Salalah Free Zone"),
+    ("salalah freezone - odp", "Asyad", "Salalah Free Zone"),
+    ("salalah freezone - sfz", "Asyad", "Salalah Free Zone"),
+    ("asyad", "Asyad", "All"),
     ("atd", "ATD", "All"),
     ("sfs", "SFS", "All"),
     ("shifahospital", "ShifaHospital", "All"),
     ("sof - airport heights", "SOF", "Airport Heights"),
     ("united engineering projects company", "United Engineering Projects Company", "All"),
+    ("bank_dhofar", "BankDhofar", "All"),
 ]
+
+FILESHARE_ORG_LOCATION_OVERRIDES = [
+    ("Abraj", "Adam Base", "Adam Base", "Abraj"),
+    ("Abraj", "Cementing", "Cementing", "Abraj"),
+    ("Abraj", "DR", "DR", "Abraj"),
+    ("Abraj", "Head Office - Date Center", "Head Office - Date Center", "Abraj"),
+    ("Abraj", "IT 3rd Floor IDF", "IT 3rd Floor IDF", "Abraj"),
+    ("Abraj", "IT 6th Floor IDF", "IT 6th Floor IDF", "Abraj"),
+    ("Abraj", "IT Data Center", "IT Data Center", "Abraj"),
+    ("Abraj", "Training Center", "Training Center", "Abraj"),
+    ("Abraj", "TrainingCenter", "Training Center", "Abraj"),
+    ("Abraj", "Warehouse", "Warehouse", "Abraj"),
+    ("Abraj", "Warehouse, Control Room", "Warehouse", "Abraj"),
+    ("Asyad", "Corporate/ODP - Cloud", "Coporate", "Asyad"),
+    ("Asyad", "Corporate/ODP - Corporate", "Coporate", "Asyad"),
+    ("Asyad", "Corporate/ODP - Corprate", "Coporate", "Asyad"),
+    ("Asyad", "Corporate/ODP - ODP", "Coporate", "Asyad"),
+    ("Asyad", "DryDock", "Drydock", "Asyad"),
+    ("Asyad", "DryDock - DryDock", "Drydock", "Asyad"),
+    ("Asyad", "DryDock - ODP", "Drydock", "Asyad"),
+    ("Asyad", "Mwasalat", "Mwasalat", "Asyad"),
+    ("Asyad", "Mwasalat - Mwasalat AZ", "Mwasalat", "Asyad"),
+    ("Asyad", "Mwasalat - Mwasalat GH", "Mwasalat", "Asyad"),
+    ("Asyad", "OmanPost", "Oman Post", "Asyad"),
+    ("Asyad", "OmanPost - Omanpost", "Oman Post", "Asyad"),
+    ("Asyad", "Omanship - Corporate", "Shipping", "Asyad"),
+    ("Asyad", "Omanship - Omanship", "Shipping", "Asyad"),
+    ("Asyad", "Port - ODP", "Ports", "Asyad"),
+    ("Asyad", "Port - Port", "Ports", "Asyad"),
+    ("Asyad", "Salalah FreeZone", "Salalah Free Zone", "Asyad"),
+    ("Asyad", "Salalah FreeZone - ODP", "Salalah Free Zone", "Asyad"),
+    ("Asyad", "Salalah FreeZone - SFZ", "Salalah Free Zone", "Asyad"),
+    ("Bank_Dhofar", "Assets-1", "All", "Bank Dhofar"),
+    ("Bank_Dhofar", "DB_IP_Details", "Database", "Bank Dhofar"),
+    ("Bank_Dhofar", "Primary DMZ_Live_IP", "Primary DMZ", "Bank Dhofar"),
+    ("Bank_Dhofar", "Primary Data Center_Live_IP", "Primary Data Center", "Bank Dhofar"),
+    ("Bank_Dhofar", "Primary Network Devices_Live_IPs", "Primary Network Devices", "Bank Dhofar"),
+    ("Bank_Dhofar", "Primary Routers_Live_Ip", "Primary Routers", "Bank Dhofar"),
+    ("Bank_Dhofar", "Public IPs - updated v1.1", "Public IPs", "Bank Dhofar"),
+    ("Bank_Dhofar", "Secondary Data Center_Live_IP", "Secondary Data Center", "Bank Dhofar"),
+    ("Bank_Dhofar", "Swift_Live_IP", "Swift", "Bank Dhofar"),
+    ("CCED", "NULL", "All", "CCED"),
+    ("CCED", "FARHA", "FARHA", "CCED"),
+    ("CCED", "HQ", "HQ", "CCED"),
+    ("CCED", "Muscat", "Muscat", "CCED"),
+    ("CCED", "QARN ALAM", "QARN ALAM", "CCED"),
+    ("CCED", "SAIWAN", "SAIWAN", "CCED"),
+    ("CCED", "SHAHD", "SHAHD", "CCED"),
+    ("CCED", "ULFA", "ULFA", "CCED"),
+    ("Lakhoos_Exchange", "NULL", "All", "Lakhoos Exchange"),
+    ("MDC", "NULL", "All", "MDC"),
+    ("MOG", "Muscat", "All", "MOG"),
+    ("MPC", "NULL", "All", "MPC"),
+    ("PhoenixPower", "NULL", "All", "Phoenix Power"),
+    ("PhoenixPower", "Sur", "Sur", "Phoenix Power"),
+    ("PhoenixPower", "Sur ODP", "Oman Data Park", "Phoenix Power"),
+    ("Securado", "NULL", "All", "Securado"),
+    ("SMNPower", "NULL", "All", "SMN Power"),
+    ("Sohar_Port_Freezone", "NULL", "All", "Sohar Port Freezone"),
+    ("Unimoni", "ODP (Hosted)", "Oman Data Park", "Unimoni"),
+    ("Unimoni", "Oman Data Park (DC)", "Oman Data Park (DC)", "Unimoni"),
+]
+
+
+def _normalize_manual_mapping_key(value):
+    if value is None:
+        return "__null__"
+    normalized = " ".join(str(value).strip().split()).lower()
+    if normalized in {"", "null", "none"}:
+        return "__null__"
+    return normalized
+
+
+def _normalized_mapping_key_expr(col_expr):
+    cleaned = F.lower(
+        F.trim(
+            F.regexp_replace(
+                F.coalesce(clean_string(col_expr), lit("")),
+                r"\s+",
+                " ",
+            )
+        )
+    )
+    return F.when(cleaned.isin("", "null", "none"), lit("__null__")).otherwise(cleaned)
 
 
 def _as_timestamp(col_name: str):
@@ -278,6 +384,45 @@ def split_site_name_and_org(site_col_expr):
 
 
 
+def split_fileshare_site_and_org(location_col_expr, organization_col_expr):
+    """
+    Fileshare-specific site/org split keyed by (organization_name, location).
+    Returns a tuple of Columns: (site_name, normalised_org_name).
+
+    Fallback:
+    - site_name keeps cleaned location value
+    - normalised_org_name keeps cleaned organization_name (or derives from location if missing)
+    """
+    raw_location = clean_string(location_col_expr)
+    raw_org = clean_string(organization_col_expr)
+    site_name = raw_location
+    org_name = F.coalesce(raw_org, normalize_org_name(raw_location))
+
+    pair_key = F.concat_ws(
+        "||",
+        _normalized_mapping_key_expr(raw_org),
+        _normalized_mapping_key_expr(raw_location),
+    )
+
+    manual_org_entries = []
+    manual_site_entries = []
+    for raw_org_key, raw_location_key, mapped_site, mapped_org in FILESHARE_ORG_LOCATION_OVERRIDES:
+        normalized_key = (
+            f"{_normalize_manual_mapping_key(raw_org_key)}"
+            f"||{_normalize_manual_mapping_key(raw_location_key)}"
+        )
+        manual_org_entries.extend([lit(normalized_key), lit(mapped_org).cast("string")])
+        manual_site_entries.extend([lit(normalized_key), lit(mapped_site).cast("string")])
+
+    manual_org = F.element_at(F.create_map(*manual_org_entries), pair_key)
+    manual_site = F.element_at(F.create_map(*manual_site_entries), pair_key)
+    has_manual_mapping = manual_org.isNotNull()
+
+    site_name = F.when(has_manual_mapping, manual_site).otherwise(site_name)
+    org_name = F.when(has_manual_mapping, manual_org).otherwise(org_name)
+    return site_name, org_name
+
+
 def org_map_matched(raw_col_expr, normalized_col_expr):
     raw_norm = F.lower(clean_string(raw_col_expr))
     mapped_norm = F.lower(clean_string(normalized_col_expr))
@@ -382,9 +527,6 @@ TARGET_FIELDS = [
     StructField("site_vuln_critical", LongType(), True),
     StructField("site_vuln_severe", LongType(), True),
     StructField("site_vuln_moderate", LongType(), True),
-    StructField("device_vendor", StringType(), True),
-    StructField("device_model", StringType(), True),
-    StructField("device_version", StringType(), True),
     StructField("platform_version", StringType(), True),
     StructField("asset_type", StringType(), True),
     StructField("os_name", StringType(), True),
@@ -427,7 +569,6 @@ TARGET_FIELDS = [
     StructField("missing_permissions", ArrayType(StringType()), True),
     StructField("user_actions_needed", ArrayType(StringType()), True),
     StructField("location_names", ArrayType(StringType()), True),
-    StructField("device_status", StringType(), True),
     StructField("event_log_status", StringType(), True),
     StructField("perf_mon_status", StringType(), True),
     StructField("update_method", StringType(), True),

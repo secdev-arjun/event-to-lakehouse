@@ -76,7 +76,7 @@ def build_gold_rows(
 
     risk_score = F.col("r_risk_score")
 
-    device_vendor = F.col("f_device_vendor")
+    device_vendor = _col_or_null(grouped, "f_device_vendor")
 
     all_hostnames = _union_arrays(F.col("r_hostnames"), F.col("s_hostnames"), F.col("f_hostnames"))
     all_ip_addresses = _union_arrays(F.col("r_ip_addresses"), F.col("f_ip_addresses"), F.col("s_ip_addresses"))
@@ -180,8 +180,8 @@ def build_gold_rows(
         F.coalesce(F.col("r_site_vuln_severe"), F.col("s_site_vuln_severe"), F.col("f_site_vuln_severe")).alias("site_vuln_severe"),
         F.coalesce(F.col("r_site_vuln_moderate"), F.col("s_site_vuln_moderate"), F.col("f_site_vuln_moderate")).alias("site_vuln_moderate"),
         device_vendor.alias("device_vendor"),
-        F.col("f_device_model").alias("device_model"),
-        F.col("f_device_version").alias("device_version"),
+        _col_or_null(grouped, "f_device_model").alias("device_model"),
+        _col_or_null(grouped, "f_device_version").alias("device_version"),
         F.col("f_platform_version").alias("platform_version"),
         F.coalesce(F.col("r_asset_type"), F.col("f_asset_type"), F.col("s_asset_type")).alias("asset_type"),
         os_name.alias("os_name"),
@@ -224,7 +224,7 @@ def build_gold_rows(
         _union_arrays(F.col("s_missing_permissions"), F.col("r_missing_permissions"), F.col("f_missing_permissions")).alias("missing_permissions"),
         _union_arrays(F.col("s_user_actions_needed"), F.col("r_user_actions_needed"), F.col("f_user_actions_needed")).alias("user_actions_needed"),
         _union_arrays(F.col("s_location_names"), F.col("r_location_names"), F.col("f_location_names")).alias("location_names"),
-        F.col("f_device_status").alias("device_status"),
+        _col_or_null(grouped, "f_device_status").alias("device_status"),
         _col_or_null(grouped, "f_discover_method").alias("discover_method"),
         F.col("f_event_log_status").alias("event_log_status"),
         F.col("f_perf_mon_status").alias("perf_mon_status"),
