@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import time
@@ -17,6 +18,64 @@ BASE_DIR = os.path.dirname(SCRIPT_DIR)
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
+
+
+def _apply_cli_env_overrides() -> None:
+    """
+    Allow Livy batch `args` to override config while preserving env/default fallback.
+    """
+    parser = argparse.ArgumentParser(add_help=False)
+
+    parser.add_argument("--rapid7-bronze-current-table")
+    parser.add_argument("--forti-bronze-current-table")
+    parser.add_argument("--sentinel-bronze-current-table")
+    parser.add_argument("--fileshare-bronze-current-table")
+    parser.add_argument("--rapid7-site-current-table")
+
+    parser.add_argument("--rapid7-silver-current-table")
+    parser.add_argument("--rapid7-silver-history-table")
+    parser.add_argument("--forti-silver-current-table")
+    parser.add_argument("--forti-silver-history-table")
+    parser.add_argument("--sentinel-silver-current-table")
+    parser.add_argument("--sentinel-silver-history-table")
+    parser.add_argument("--fileshare-silver-current-table")
+    parser.add_argument("--fileshare-silver-history-table")
+
+    parser.add_argument("--conformed-contract-path")
+    parser.add_argument("--coalesce-partitions")
+    parser.add_argument("--contract-cache-ttl-sec")
+    parser.add_argument("--silver-checkpoint-table")
+    parser.add_argument("--silver-checkpoint-lookback-minutes")
+    parser.add_argument("--use-silver-ingest-ts")
+
+    args, _ = parser.parse_known_args()
+    env_overrides = {
+        "RAPID7_BRONZE_CURRENT_TABLE": args.rapid7_bronze_current_table,
+        "FORTI_BRONZE_CURRENT_TABLE": args.forti_bronze_current_table,
+        "SENTINEL_BRONZE_CURRENT_TABLE": args.sentinel_bronze_current_table,
+        "FILESHARE_BRONZE_CURRENT_TABLE": args.fileshare_bronze_current_table,
+        "RAPID7_SITE_CURRENT_TABLE": args.rapid7_site_current_table,
+        "RAPID7_SILVER_CURRENT_TABLE": args.rapid7_silver_current_table,
+        "RAPID7_SILVER_HISTORY_TABLE": args.rapid7_silver_history_table,
+        "FORTI_SILVER_CURRENT_TABLE": args.forti_silver_current_table,
+        "FORTI_SILVER_HISTORY_TABLE": args.forti_silver_history_table,
+        "SENTINEL_SILVER_CURRENT_TABLE": args.sentinel_silver_current_table,
+        "SENTINEL_SILVER_HISTORY_TABLE": args.sentinel_silver_history_table,
+        "FILESHARE_SILVER_CURRENT_TABLE": args.fileshare_silver_current_table,
+        "FILESHARE_SILVER_HISTORY_TABLE": args.fileshare_silver_history_table,
+        "CONFORMED_CONTRACT_PATH": args.conformed_contract_path,
+        "COALESCE_PARTITIONS": args.coalesce_partitions,
+        "CONTRACT_CACHE_TTL_SEC": args.contract_cache_ttl_sec,
+        "SILVER_CHECKPOINT_TABLE": args.silver_checkpoint_table,
+        "SILVER_CHECKPOINT_LOOKBACK_MINUTES": args.silver_checkpoint_lookback_minutes,
+        "USE_SILVER_INGEST_TS": args.use_silver_ingest_ts,
+    }
+    for key, value in env_overrides.items():
+        if value is not None:
+            os.environ[key] = str(value)
+
+
+_apply_cli_env_overrides()
 
 from mapping.target import TARGET_FIELDS, ensure_columns, add_payload_hash
 from mapping.sources.rapid7 import normalize_rapid7
@@ -107,7 +166,7 @@ FILESHARE_SILVER_HISTORY_TABLE = os.getenv(
 
 CONFORMED_CONTRACT_PATH = os.getenv(
     "CONFORMED_CONTRACT_PATH",
-    "/opt/spark/scripts/bronze/contracts/assets_silver_contract.yaml"
+    "/opt/spark/scripts/bronze/contracts/assets_silver_contract.json"
 )
 
 COALESCE_PARTITIONS = int(os.getenv("COALESCE_PARTITIONS", "4"))

@@ -33,7 +33,77 @@
       "perf_mon_status",
       "update_method",
       "services_count",
-      "software_count"
+      "software_count",
+      "infected",
+      "threat_reboot_required",
+      "detection_state",
+      "apps_vulnerability_status",
+      "encrypted_applications",
+      "allow_remote_shell",
+      "in_remote_shell_session",
+      "remote_profiling_state",
+      "console_migration_status",
+      "is_hyper_automate",
+      "is_decommissioned",
+      "is_uninstalled",
+      "is_pending_uninstall",
+      "is_up_to_date",
+      "is_ad_connector",
+      "has_containerized_workload",
+      "containerized_workload_counts",
+      "license_key",
+      "installer_type",
+      "ranger_version",
+      "show_alert_icon",
+      "proxy_console",
+      "proxy_deep_visibility",
+      "cpu_id",
+      "core_count",
+      "storage_name",
+      "storage_type",
+      "machine_sid",
+      "os_username",
+      "ad_computer_dn",
+      "ad_user_principal_name",
+      "ad_computer_member_of",
+      "ad_last_user_dn",
+      "ad_last_user_member_of",
+      "scan_started_at",
+      "scan_finished_at",
+      "scan_aborted_at",
+      "full_disk_scan_last_updated_at",
+      "first_full_mode_time",
+      "last_successful_scan_date",
+      "created_at",
+      "registered_at",
+      "last_active_date",
+      "location_type",
+      "location_enabled",
+      "os_system_name",
+      "os_description",
+      "os_cpe_v2_3",
+      "asset_owner_name",
+      "asset_owner_contact",
+      "asset_owner_email",
+      "priority_business_impact",
+      "role_function",
+      "notes",
+      "zone",
+      "applications",
+      "database",
+      "services_enabled",
+      "bios",
+      "build_number",
+      "hw_vendor",
+      "hw_serial_num",
+      "os_serial_num",
+      "device_description",
+      "creation_method",
+      "shallow_discovery",
+      "param",
+      "discover_time",
+      "primary_contact_user",
+      "secondary_contact_user"
     ],
     "org_map_matched_test": {
       "mode": "informational",
@@ -865,6 +935,517 @@
     },
     "software_count": {
       "type": "int",
+      "nullable": true
+    },
+    "infected": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "threat_reboot_required": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "detection_state": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "apps_vulnerability_status": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "encrypted_applications": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "allow_remote_shell": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "in_remote_shell_session": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "remote_profiling_state": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "console_migration_status": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "is_hyper_automate": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "is_decommissioned": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "is_uninstalled": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "is_pending_uninstall": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "is_up_to_date": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "is_ad_connector": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "has_containerized_workload": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "containerized_workload_counts": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "license_key": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "installer_type": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "ranger_version": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "show_alert_icon": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "proxy_console": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "proxy_deep_visibility": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "model_name": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "cpu_id": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "core_count": {
+      "type": "int",
+      "nullable": true
+    },
+    "storage_name": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "storage_type": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "machine_sid": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "os_username": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "ad_computer_dn": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "ad_user_principal_name": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "ad_computer_member_of": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "ad_last_user_dn": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "ad_last_user_member_of": {
+      "type": "array<string>",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "array_filter_nulls"
+        },
+        {
+          "op": "array_distinct"
+        },
+        {
+          "op": "array_sort"
+        }
+      ]
+    },
+    "scan_started_at": {
+      "type": "timestamp",
+      "nullable": true
+    },
+    "scan_finished_at": {
+      "type": "timestamp",
+      "nullable": true
+    },
+    "scan_aborted_at": {
+      "type": "timestamp",
+      "nullable": true
+    },
+    "full_disk_scan_last_updated_at": {
+      "type": "timestamp",
+      "nullable": true
+    },
+    "first_full_mode_time": {
+      "type": "timestamp",
+      "nullable": true
+    },
+    "last_successful_scan_date": {
+      "type": "timestamp",
+      "nullable": true
+    },
+    "created_at": {
+      "type": "timestamp",
+      "nullable": true
+    },
+    "registered_at": {
+      "type": "timestamp",
+      "nullable": true
+    },
+    "last_active_date": {
+      "type": "timestamp",
+      "nullable": true
+    },
+    "location_type": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "location_enabled": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "os_system_name": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "os_description": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "os_cpe_v2_3": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "asset_owner_name": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "asset_owner_contact": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "asset_owner_email": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "priority_business_impact": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "role_function": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "zone": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "applications": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "database": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "services_enabled": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "bios": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "build_number": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "hw_vendor": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "hw_serial_num": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "os_serial_num": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "device_description": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "creation_method": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "shallow_discovery": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "param": {
+      "type": "string",
+      "nullable": true,
+      "rules": [
+        {
+          "op": "trim"
+        }
+      ]
+    },
+    "discover_time": {
+      "type": "timestamp",
+      "nullable": true
+    },
+    "primary_contact_user": {
+      "type": "bigint",
+      "nullable": true
+    },
+    "secondary_contact_user": {
+      "type": "bigint",
       "nullable": true
     },
     "raw_payload": {

@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 
@@ -9,6 +10,37 @@ BASE_DIR = os.path.dirname(SCRIPT_DIR)
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
+
+
+def _apply_cli_env_overrides() -> None:
+    """
+    Allow Livy batch `args` to override config while preserving env/default fallback.
+    """
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--rapid7-silver-current-table")
+    parser.add_argument("--forti-silver-current-table")
+    parser.add_argument("--sentinel-silver-current-table")
+    parser.add_argument("--gold-assets-current-table")
+    parser.add_argument("--gold-assets-history-table")
+    parser.add_argument("--gold-max-component-iterations")
+    parser.add_argument("--gold-include-review-matches")
+
+    args, _ = parser.parse_known_args()
+    env_overrides = {
+        "RAPID7_SILVER_CURRENT_TABLE": args.rapid7_silver_current_table,
+        "FORTI_SILVER_CURRENT_TABLE": args.forti_silver_current_table,
+        "SENTINEL_SILVER_CURRENT_TABLE": args.sentinel_silver_current_table,
+        "GOLD_ASSETS_CURRENT_TABLE": args.gold_assets_current_table,
+        "GOLD_ASSETS_HISTORY_TABLE": args.gold_assets_history_table,
+        "GOLD_MAX_COMPONENT_ITERATIONS": args.gold_max_component_iterations,
+        "GOLD_INCLUDE_REVIEW_MATCHES": args.gold_include_review_matches,
+    }
+    for key, value in env_overrides.items():
+        if value is not None:
+            os.environ[key] = str(value)
+
+
+_apply_cli_env_overrides()
 
 from gold.config import (
     GOLD_ALLOW_DUPLICATE_SOURCE_COMPONENTS,

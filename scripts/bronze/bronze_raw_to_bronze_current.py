@@ -1,3 +1,5 @@
+import argparse
+import json
 import os
 import sys
 from datetime import datetime, timezone, timedelta
@@ -12,6 +14,65 @@ BASE_DIR = os.path.dirname(SCRIPT_DIR)
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
+
+
+def _apply_cli_env_overrides() -> None:
+    """
+    Allow Livy batch `args` to override config while preserving env/default fallback.
+    """
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--raw-sample-namespace")
+    parser.add_argument("--rapid7-bronze-table")
+    parser.add_argument("--rapid7-site-bronze-table")
+    parser.add_argument("--forti-bronze-table")
+    parser.add_argument("--forti-org-bronze-table")
+    parser.add_argument("--sentinel-bronze-table")
+    parser.add_argument("--sentinel-site-bronze-table")
+    parser.add_argument("--fileshare-bronze-table")
+
+    parser.add_argument("--rapid7-current-table")
+    parser.add_argument("--rapid7-site-current-table")
+    parser.add_argument("--forti-current-table")
+    parser.add_argument("--forti-org-current-table")
+    parser.add_argument("--sentinel-current-table")
+    parser.add_argument("--sentinel-site-current-table")
+    parser.add_argument("--fileshare-current-table")
+
+    parser.add_argument("--bronze-current-checkpoint-table")
+    parser.add_argument("--checkpoint-lookback-minutes")
+    parser.add_argument("--use-ingest-ts")
+    parser.add_argument("--enabled-sources")
+    parser.add_argument("--entity-id-config-json")
+
+    args, _ = parser.parse_known_args()
+    env_overrides = {
+        "RAW_SAMPLE_NAMESPACE": args.raw_sample_namespace,
+        "RAPID7_BRONZE_TABLE": args.rapid7_bronze_table,
+        "RAPID7_SITE_BRONZE_TABLE": args.rapid7_site_bronze_table,
+        "FORTI_BRONZE_TABLE": args.forti_bronze_table,
+        "FORTI_ORG_BRONZE_TABLE": args.forti_org_bronze_table,
+        "SENTINEL_BRONZE_TABLE": args.sentinel_bronze_table,
+        "SENTINEL_SITE_BRONZE_TABLE": args.sentinel_site_bronze_table,
+        "FILESHARE_BRONZE_TABLE": args.fileshare_bronze_table,
+        "RAPID7_CURRENT_TABLE": args.rapid7_current_table,
+        "RAPID7_SITE_CURRENT_TABLE": args.rapid7_site_current_table,
+        "FORTI_CURRENT_TABLE": args.forti_current_table,
+        "FORTI_ORG_CURRENT_TABLE": args.forti_org_current_table,
+        "SENTINEL_CURRENT_TABLE": args.sentinel_current_table,
+        "SENTINEL_SITE_CURRENT_TABLE": args.sentinel_site_current_table,
+        "FILESHARE_CURRENT_TABLE": args.fileshare_current_table,
+        "BRONZE_CURRENT_CHECKPOINT_TABLE": args.bronze_current_checkpoint_table,
+        "CHECKPOINT_LOOKBACK_MINUTES": args.checkpoint_lookback_minutes,
+        "USE_INGEST_TS": args.use_ingest_ts,
+        "ENABLED_SOURCES": args.enabled_sources,
+        "ENTITY_ID_CONFIG_JSON": args.entity_id_config_json,
+    }
+    for key, value in env_overrides.items():
+        if value is not None:
+            os.environ[key] = str(value)
+
+
+_apply_cli_env_overrides()
 
 
 # ------------------------------------------------------------------------------
@@ -120,6 +181,7 @@ ENABLED_SOURCES = {
     for s in os.getenv("ENABLED_SOURCES", "").split(",")
     if s.strip()
 }
+ENTITY_ID_CONFIG_JSON = os.getenv("ENTITY_ID_CONFIG_JSON", "").strip()
 
 # ------------------------------------------------------------------------------
 # Helpers
@@ -508,7 +570,13 @@ def _process_source(source_system, source_key, raw_table, current_table, entity_
 
 
 def main():
-    entity_id_config = _resolve_entity_id_config()
+    runtime_override = None
+    if ENTITY_ID_CONFIG_JSON:
+        try:
+            runtime_override = json.loads(ENTITY_ID_CONFIG_JSON)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid ENTITY_ID_CONFIG_JSON: {exc}") from exc
+    entity_id_config = _resolve_entity_id_config(runtime_override)
 
     _process_source(
         "rapid7",
